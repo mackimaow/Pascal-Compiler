@@ -1,27 +1,28 @@
 #ifndef LINKEDLIST_H
 #define LINKEDLIST_H
 
+#include <stdbool.h>
+#include "utils.h"
+#include "object.h"
 
+typedef struct LinkedList LinkedList;
+typedef struct LinkedNode LinkedNode ;
 
-struct LinkedPairElement {
-	char * attribute;
-	char * tokenType;
-	struct LinkedPairElement * next = nullptr;
-} LinkedPairElement ; 
+LinkedList* linkedListInit ( ObjectType * elementType ) ;
+LinkedList* linkedListInitWithPrintProperties ( ObjectType * elementType, ListPrintProperties * printProperties);
+void linkedListDestroy(  LinkedList * linkedList  );
 
-typedef struct LinkedList {
-	int size = 0;
-	struct LinkedPairElement * first = nullptr;
-};
+void  linkedListPush (  LinkedList * linkedList,  void * element );
+void*  linkedListPop  (  LinkedList * linkedList );
+void*  linkedListPeak  (  LinkedList * linkedList );
+void  linkedListAdd (  LinkedList * linkedList,  void * element, int index );
+void  linkedListRemove (  LinkedList * linkedList,  int i );
+void* linkedListGet (  LinkedList * linkedList,  int i );
 
+void linkedListClear (  LinkedList * linkedList  );
+int  linkedListGetSize (  LinkedList * linkedList  );
+void linkedListPrint (  LinkedList * linkedlist  );
 
-LinkedList* linkedListInit ( ) ;
-void linkedListDestroy(  LinkedList* linkedList  );
-int  linkedListAdd (  LinkedList & linkedList,  char * attribute,  char * tokenType  );
-void linkedListRemove (  LinkedList & linkedList,  char * attribute  );
-void linkedListClear (  LinkedList & linkedList  );
-int  linkedListGet (  LinkedList & linkedList,  char * attribute  );
-int  linkedListGetSize (  LinkedList & linkedList  );
-void linkedListPrint (  LinkedList & linkedlist  );
+bool  linkedListForEach (  LinkedList * linkedList, ForEach forEach, int numArgs, ...);
 
 #endif // LINKEDLIST_H
