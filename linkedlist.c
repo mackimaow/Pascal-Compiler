@@ -3,11 +3,13 @@
 #include <stdio.h>
 #include "linkedlist.h"
 #include "utils.h"
+#include "object.h"
 
 
 struct LinkedNode {
 	void * element;
 	struct LinkedNode * next;
+	struct LinkedNode * previous;
 };
 
 
@@ -16,6 +18,7 @@ struct LinkedList {
 	ObjectType * elementType;
 	ListPrintProperties * printProperties;
 	LinkedNode * first;
+	LinkedNode * last;
 };
 
 
@@ -34,11 +37,54 @@ static void nodeDeleteRec( LinkedNode * node, ObjectType * elementType ) {
 	nodeDelete(node, elementType);
 }
 
-static LinkedNode * nodeCreate(void* element, LinkedNode * nextNode) {
+static void nodeCreate(LinkedList * linkedList, void* element, LinkedNode * currentNode) {
+	LinkedNode * prevNode 	= currentNode? currentNode->previous : 0;
+	LinkedNode * nextNode 	= currentNode;
+
 	LinkedNode * tempNode 	= (LinkedNode*)malloc(sizeof(LinkedNode));
 	tempNode->element 		= element;
+	tempNode->previous		= prevNode;
 	tempNode->next 			= nextNode;
-	return tempNode;
+	if(prevNode)
+		prevNode->next = tempNode;
+	else
+		linkedList->first = tempNode;
+	if(nextNode)
+		nextNode->previous = tempNode;
+	else
+		linkedList->last = tempNode;
+	linkedList->size++;
+}
+
+static void nodeCreateLast(LinkedList * linkedList, void* element) {
+	LinkedNode * previousLastNode = linkedList->last;
+
+	LinkedNode * tempNode 	= (LinkedNode*)malloc(sizeof(LinkedNode));
+	tempNode->element 		= element;
+	tempNode->previous		= previousLastNode;
+	tempNode->next 			= 0;
+
+	if(previousLastNode)
+		previousLastNode->next = tempNode;
+	else
+		linkedList->first = tempNode;
+	linkedList->last = tempNode;
+	linkedList->size++;
+}
+
+static void nodeRemove(LinkedList * linkedList, LinkedNode * currentNode) {
+	LinkedNode * prevNode 	= currentNode? currentNode->previous : 0;
+	LinkedNode * nextNode 	= currentNode? currentNode->next : 0;
+	nodeDelete(currentNode, linkedList->elementType);
+	if(prevNode)
+		prevNode->next = nextNode;
+	else
+		linkedList->first = nextNode;
+	if(nextNode)
+		nextNode->previous = prevNode;
+	else
+		linkedList->last = prevNode;
+	linkedList->size--;
 }
 
 
@@ -59,6 +105,14 @@ static bool removeForEach(ObjectType * elementType, int index, void* element, vo
 	return false;
 }
 
+static bool removeElementForEach(ObjectType * elementType, int index, void* element, void** parameters, ForEachOptions* options){
+	if(element == parameters[0]) {
+		options->remove = true;
+		return true;
+	}
+	return false;	
+}
+
 
 static bool getForEach(ObjectType * elementType, int index, void* element, void** parameters, ForEachOptions* options) {
 	if(*((int*)parameters[0]) == index) {
@@ -69,15 +123,19 @@ static bool getForEach(ObjectType * elementType, int index, void* element, void*
 	return false;
 }
 
-static bool printForEach(ObjectType * elementType, int index, void* element, void** parameters, ForEachOptions* options) {
-	bool * printedFirstElement = (bool *)parameters[0];
-	if(*printedFirstElement) {
-		char * separatorString = (char*)parameters[1];
-		printf("%s", separatorString);
-	} else {
-		*printedFirstElement = true;
-	}
-	objectTypePrintValue(elementType, element);
+static bool toStringForEach(ObjectType * elementType, int index, void* element, void** parameters, ForEachOptions* options) {
+	LinkedList * linkedList = (LinkedList *) parameters[0];
+	LinkedList * stringLengthsList = (LinkedList *) parameters[1];
+	Single single = *(Single *)parameters[2];
+	char * elementString = objectTypeToString(elementType, element);
+	int size = 0;
+	char c = *elementString;
+	int * stringSize = malloc(sizeof(int));
+	*(stringSize) = getStringSize(elementString);
+	int * totalSize = (int *)(single.element);
+	*(totalSize) += getStringSize(elementString);
+	linkedListPush(linkedList, elementString);
+	linkedListPush(stringLengthsList, stringSize); 
 	return false;
 }
 
@@ -88,23 +146,27 @@ LinkedList* linkedListInit ( ObjectType * elementType ) {
 }
 
 LinkedList* linkedListInitWithPrintProperties ( ObjectType * elementType, ListPrintProperties * printProperties) {
-	LinkedList * linkedList = (LinkedList*)malloc(sizeof(LinkedList));
+	LinkedList * linkedList = (LinkedList*) malloc(sizeof(LinkedList));
 	linkedList->elementType = elementType;
 	linkedList->size = 0;
 	linkedList->printProperties = printProperties;
 	linkedList->first = 0;
+	linkedList->last = 0;
 	return linkedList;
 }
-
 
 void linkedListDestroy(  LinkedList * linkedList  ) {
 	nodeDeleteRec ( linkedList->first , linkedList->elementType );
 	free(linkedList);
 }
 
+void linkedListChangePrintProperties( LinkedList * linkedList, ListPrintProperties * printProperties ) {
+	linkedList->printProperties = printProperties;
+}
+
+
 void  linkedListPush (  LinkedList * linkedList,  void * element ) {
-	linkedList->first = nodeCreate(element, linkedList->first);
-	linkedList->size++;
+	nodeCreate(linkedList, element, linkedList->first);
 }
 
 
@@ -112,9 +174,7 @@ void*  linkedListPop  (  LinkedList * linkedList) {
 	if(linkedList->first) {
 		LinkedNode * toDelete = linkedList->first; 
 		void* elem = toDelete->element;
-		linkedList->first = toDelete->next;
-		nodeDelete(toDelete, linkedList->elementType);
-		linkedList->size--;
+		nodeRemove(linkedList, toDelete);
 		return elem;
 	}
 	return 0;
@@ -126,12 +186,48 @@ void*  linkedListPeak  (  LinkedList * linkedList ) {
 	return 0;	
 }
 
+
+void linkedListEnqueue( LinkedList * linkedList,  void * element ) {
+	linkedListPush (  linkedList,  element );
+}
+
+void* linkedListDequeue( LinkedList * linkedList ) {
+	return linkedListPopBack( linkedList );
+}
+
+
+void linkedListPushBack( LinkedList * linkedList,  void * element ) {
+	nodeCreateLast(linkedList, element);
+}
+
+void* linkedListPopBack( LinkedList * linkedList ) {
+	if(linkedList->last) {
+		LinkedNode * toDelete = linkedList->last; 
+		void* elem = toDelete->element;
+		nodeRemove(linkedList, toDelete);
+		return elem;
+	}
+	return 0;	
+}
+
+void* linkedListPeakBack( LinkedList * linkedList ) {
+	if(linkedList->last)
+		return linkedList->last->element;
+	return 0;
+}
+
+
+
 void  linkedListAdd (  LinkedList * linkedList, void * element, int index ) {
 	linkedListForEach(linkedList, addForEach, 2, &index, element);
 }
 
-void  linkedListRemove (  LinkedList * linkedList,  int i ) {
-	linkedListForEach(linkedList, removeForEach, 1, &i);
+bool  linkedListRemove (  LinkedList * linkedList,  int i ) {
+	return linkedListForEach(linkedList, removeForEach, 1, &i);
+}
+
+bool  linkedListRemoveElement (  LinkedList * linkedList,  void * element ) {
+	return linkedListForEach(linkedList, removeElementForEach, 1, element);
 }
 
 void* linkedListGet (  LinkedList * linkedList,  int i ) {
@@ -144,6 +240,7 @@ void linkedListClear (  LinkedList * linkedList  ) {
 	linkedList->size = 0;
 	nodeDeleteRec(linkedList->first, linkedList->elementType);
 	linkedList->first = 0;
+	linkedList->last = 0;
 }
 
 int  linkedListGetSize (  LinkedList * linkedList  ) {
@@ -151,10 +248,65 @@ int  linkedListGetSize (  LinkedList * linkedList  ) {
 }
 
 void linkedListPrint (  LinkedList * linkedList ) {
-	printf("%s", linkedList->printProperties->startString);
-	bool printedFirstElement = false;
-	linkedListForEach( linkedList, printForEach, 2, &printedFirstElement, linkedList->printProperties->separatorString);
-	printf("%s", linkedList->printProperties->endString);
+	if(!objectTypeHasToStringFunction(linkedList->elementType))
+		return;
+	char * stringList = linkedListToString (  linkedList  );
+	printf("%s", stringList);
+	free(stringList);
+}
+
+char* linkedListToString (  LinkedList * linkedList  ) {
+	if(!objectTypeHasToStringFunction(linkedList->elementType))
+		return 0;
+	ListPrintProperties * printProperties = linkedList->printProperties;
+
+	LinkedList * stringList        = linkedListInit(&STRING_OBJECT);
+	LinkedList * stringLengthsList = linkedListInit(&INT_OBJECT);
+	int sumStringLengths = 0;
+	Single single;
+	single.element = &sumStringLengths;
+
+	linkedListForEach( linkedList, toStringForEach, 3, stringList, stringLengthsList, &single);
+	
+	int numberOfElements = linkedListGetSize( stringList );
+	int startStringLength = getStringSize(printProperties->startString);
+	int separatorStringLength = getStringSize(printProperties->separatorString);
+	int endStringLength = getStringSize(printProperties->endString);
+
+	int numberOfSeparators = numberOfElements-1;
+	if(numberOfSeparators < 0)
+		numberOfSeparators = 0;
+
+	int totalStringLength = startStringLength + sumStringLengths + separatorStringLength * numberOfSeparators + endStringLength;
+
+	char * temp =  malloc(sizeof(char) * (totalStringLength+1));
+
+	*(temp+totalStringLength) = '\0';
+	
+	int indexFromBack = totalStringLength-endStringLength;
+	stringInsert(temp, printProperties->endString, indexFromBack);
+
+	for(int i = numberOfElements - 1; i>=1; i--) {
+		char * stringToInsert = (char *) linkedListPeak(stringList);
+		int stringLength = *(int *) linkedListPeak(stringLengthsList);
+		indexFromBack-=stringLength;
+		stringInsert(temp, stringToInsert, indexFromBack);
+		indexFromBack-=separatorStringLength;
+		stringInsert(temp, printProperties->separatorString, indexFromBack);
+		linkedListPop(stringList);
+		linkedListPop(stringLengthsList);
+	}
+	if(linkedListGetSize(stringList) != 0) {
+		char * stringToInsert = (char *) linkedListPeak(stringList);
+		int stringLength = *(int *) linkedListPeak(stringLengthsList);
+		indexFromBack-=stringLength;
+		stringInsert(temp, stringToInsert, indexFromBack);
+	}
+	stringInsert(temp, printProperties->startString, 0);
+
+	linkedListDestroy(stringList);
+	linkedListDestroy(stringLengthsList);
+	return temp;
 }
 
 bool linkedListForEach (  LinkedList * linkedList, ForEach forEach, int numArgs, ... ) {
@@ -180,26 +332,12 @@ bool linkedListForEach (  LinkedList * linkedList, ForEach forEach, int numArgs,
 		LinkedNode * nextNode = curNode->next;
 		int indexInr = (options->remove? -1 : 0) + (options->insert? 1 : 0);
 
-		if(indexInr == -1) {
-			nodeDelete(curNode, linkedList->elementType);
-			if(index == 0)
-				linkedList->first = nextNode;					
-			else
-				prevNode->next = nextNode;
-			linkedList->size--;
-
-
-		} else if (indexInr == 1) {
-			LinkedNode * tempNode = nodeCreate(options->insert, curNode);
-			if(index == 0)
-				linkedList->first = tempNode;
-			else
-				prevNode->next = tempNode;
-			linkedList->size++;
-
-		} else if (options->insert) {
+		if(indexInr == -1)
+			nodeRemove(linkedList, curNode);
+		else if (indexInr == 1)
+			nodeCreate(linkedList, options->insert, curNode);
+		else if (options->insert)
 			curNode->element = options->insert;
-		}
 
 		if(stopShort)
 			break;

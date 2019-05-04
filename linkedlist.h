@@ -12,16 +12,29 @@ LinkedList* linkedListInit ( ObjectType * elementType ) ;
 LinkedList* linkedListInitWithPrintProperties ( ObjectType * elementType, ListPrintProperties * printProperties);
 void linkedListDestroy(  LinkedList * linkedList  );
 
+void linkedListChangePrintProperties( LinkedList * linkedList, ListPrintProperties * printProperties );
 void  linkedListPush (  LinkedList * linkedList,  void * element );
 void*  linkedListPop  (  LinkedList * linkedList );
 void*  linkedListPeak  (  LinkedList * linkedList );
+
+
+void linkedListEnqueue( LinkedList * linkedList,  void * element );
+void* linkedListDequeue( LinkedList * linkedList );
+
+void linkedListPushBack( LinkedList * linkedList,  void * element );
+void* linkedListPopBack( LinkedList * linkedList );
+void* linkedListPeakBack( LinkedList * linkedList );
+
+
 void  linkedListAdd (  LinkedList * linkedList,  void * element, int index );
-void  linkedListRemove (  LinkedList * linkedList,  int i );
+bool  linkedListRemove (  LinkedList * linkedList,  int i );
+bool  linkedListRemoveElement (  LinkedList * linkedList,  void * element );
 void* linkedListGet (  LinkedList * linkedList,  int i );
 
 void linkedListClear (  LinkedList * linkedList  );
 int  linkedListGetSize (  LinkedList * linkedList  );
 void linkedListPrint (  LinkedList * linkedlist  );
+char* linkedListToString (  LinkedList * linkedlist  );
 
 bool  linkedListForEach (  LinkedList * linkedList, ForEach forEach, int numArgs, ...);
 

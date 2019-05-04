@@ -1,6 +1,8 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "hashtable.h"
+#include "object.h"
 
 
 
@@ -13,9 +15,13 @@ int compareString (ObjectType * objectType, void * value1, void * value2) {
 	return strcmp((char*)value1, (char*)value2);
 }
 
-void printString(ObjectType * objectType, void * value) {
+char * stringToString(ObjectType * objectType, void * value) {
 	char* str = (char*)value;
-	printf("%s", str);
+	int size = getStringSize(str);
+	char * temp = malloc(sizeof(char) * (size + 1));
+	stringInsert(temp, str, 0);
+	temp[size] = '\0';
+	return temp;
 }
 
 static ObjectType * STRING_TYPE;
@@ -48,40 +54,40 @@ int hashpjw( void* value )
 
 
 int main() {
-	STRING_TYPE = objectTypeInit(printString, compareString, destroyString);
+	STRING_TYPE = objectTypeInit(stringToString, compareString, destroyString);
 	HashTable * table = hashTableInit(TABLE_SIZE, hashpjw, STRING_TYPE, STRING_TYPE);
 
-	printTable(table);
+	hashTablePrint(table);
 	printf("\n");
 	printf("Size: %d\n", hashTableSize(table));
 
 	hashTablePut(table, "One", "Another");
-	printTable(table);
+	hashTablePrint(table);
 	printf("\n");
 	printf("Size: %d\n", hashTableSize(table));
 
 	hashTablePut(table, "two", "Joke");
-	printTable(table);
+	hashTablePrint(table);
 	printf("\n");
 	printf("Size: %d\n", hashTableSize(table));
 
 	hashTablePut(table, "Three", "John");
-	printTable(table);
+	hashTablePrint(table);
 	printf("\n");
 	printf("Size: %d\n", hashTableSize(table));
 	
 	hashTablePut(table, "two", "John");
-	printTable(table);
+	hashTablePrint(table);
 	printf("\n");
 	printf("Size: %d\n", hashTableSize(table));
 	
 	hashTableRemove(table, "Three");
-	printTable(table);
+	hashTablePrint(table);
 	printf("\n");
 	printf("Size: %d\n", hashTableSize(table));
 
 	hashTableRemove(table, "Three");
-	printTable(table);
+	hashTablePrint(table);
 	printf("\n");
 	printf("Size: %d\n", hashTableSize(table));
 
@@ -89,7 +95,7 @@ int main() {
 	printf("One is: %s\n", element);
 
 	hashTableClear(table);
-	printTable(table);
+	hashTablePrint(table);
 	printf("\n");
 	printf("Size: %d\n", hashTableSize(table));
 

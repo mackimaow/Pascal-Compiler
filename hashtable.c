@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "hashtable.h"
 #include "utils.h"
+#include "object.h"
 
 
 
@@ -18,16 +19,36 @@ struct HashTable {
 
 // Utils
 
-static void pairPrint(ObjectType * pairType, void* value) {
+static char * pairToString(ObjectType * pairType, void* value) {
 	ObjectType * keyType = objectTypeGetNestedType(pairType, 0);
 	ObjectType * elementType = objectTypeGetNestedType(pairType, 1);
 	Pair* pair = (Pair*)value;
 	MapPrintProperties * printProperties = objectTypeGetProperty(pairType, 0);
-	printf("%s", printProperties->startStringPair);
-	objectTypePrintValue(keyType, pair->first);
-	printf("%s", printProperties->separatorStringPair);
-	objectTypePrintValue(elementType, pair->second);
-	printf("%s", printProperties->endStringPair);
+
+	int startStringSize 	= getStringSize(printProperties->startStringPair);
+	int separatorStringSize = getStringSize(printProperties->separatorStringPair);
+	int endStringSize		= getStringSize(printProperties->endStringPair);
+	char * firstString = objectTypeToString(keyType, pair->first);
+	char * lastString  = objectTypeToString(elementType, pair->second); 
+	int firstStringSize = getStringSize(firstString);
+	int lastStringSize = getStringSize(lastString);
+	int totalSize = startStringSize + firstStringSize + separatorStringSize + lastStringSize + endStringSize;
+	char * temp = malloc(sizeof(char) * (totalSize + 1));
+	int currentIndex = 0;
+	stringInsert(temp, printProperties->startStringPair, currentIndex);
+	currentIndex += startStringSize;
+	stringInsert(temp, firstString, currentIndex);
+	currentIndex += firstStringSize;
+	stringInsert(temp, printProperties->separatorStringPair, currentIndex);
+	currentIndex += separatorStringSize;
+	stringInsert(temp, lastString,  currentIndex);
+	currentIndex += lastStringSize;
+	stringInsert(temp, printProperties->endStringPair, currentIndex);
+	*(temp+totalSize) = '\0';
+
+	free(firstString);
+	free(lastString);
+	return temp;
 }
 
 static void pairDestructor (ObjectType * pairType, void* value) {
@@ -97,7 +118,7 @@ HashTable* hashTableInitWithPrintProperties( int capacity, HashFunction * hashFu
 	table->hashFunction = hashFunction;
 	table->buckets = malloc(sizeof(HashTable *) * capacity);
 
-	table->pairType = objectTypePropertiesNestedInit(pairPrint, 0, pairDestructor, 2, 1, keyType, elementType, printProperties);
+	table->pairType = objectTypePropertiesNestedInit(pairToString, 0, pairDestructor, 2, 1, keyType, elementType, printProperties);
 
 	table->bucketPrintProperties = malloc(sizeof(ListPrintProperties));
 	table->bucketPrintProperties->startString = "";
@@ -121,7 +142,7 @@ void hashTableDestroy(HashTable * hashTable) {
 	free(hashTable);
 }
 
-void hashTablePut(HashTable * hashTable, void* key, void* element) {
+bool hashTablePut(HashTable * hashTable, void* key, void* element) {
 	int index = hashTable->hashFunction(key);
 	LinkedList * bucket = hashTable->buckets[index];
 
@@ -138,6 +159,9 @@ void hashTablePut(HashTable * hashTable, void* key, void* element) {
 	if(!stopShort) {
 		linkedListPush(bucket, pair);
 		hashTable->size++;
+		return false;
+	} else {
+		return true;
 	}
 }
 
@@ -182,66 +206,27 @@ int  hashTableCapacity(HashTable * hashTable) {
 	return hashTable->capacity;
 }
 
-void printTable(HashTable * hashTable) {
+void hashTablePrint(HashTable * hashTable) {
+	char * temp = hashTableToString(hashTable);
+	printf("%s", temp);
+	free(temp);
+}
+
+
+char* hashTableToString(HashTable * hashTable) {
 	MapPrintProperties * printProperties = (MapPrintProperties *) objectTypeGetProperty(hashTable->pairType, 0);
-	printf("%s", printProperties->listPrintProperties->startString);
-	bool printedLastString = false;
+	LinkedList * bucketStrings = linkedListInitWithPrintProperties(&STRING_OBJECT, printProperties->listPrintProperties);
+
 	for(int i = 0; i < hashTable->capacity; i++) {
 		LinkedList * bucket = hashTable->buckets[i];
 
 		if(bucket && linkedListGetSize(bucket) > 0) {
-			if(printedLastString) {
-				printf("%s", printProperties->listPrintProperties->separatorString);
-			} else{
-				printedLastString = true;				
-			}
-			linkedListPrint(bucket);
+			char * stringValue = linkedListToString(bucket);
+			linkedListPush(bucketStrings, linkedListToString(bucket));
 		}
 	}
-	printf("%s", printProperties->listPrintProperties->endString);
+	char * temp = linkedListToString(bucketStrings);
+	linkedListDestroy(bucketStrings);
+
+	return temp;	
 }
-
-
-// /* ----------------------------------------------------------------------------- 
-//  * hashpjw
-//  * Peter J. Weinberger's hash function 
-//  * Source: Aho, Sethi, and Ullman, "Compilers", Addison-Wesley, 1986 (page 436).
-//  */
-// int hashpjw( char *s )
-// {
-// 	char *p; 
-// 	unsigned h = 0, g; 
-	
-// 	for ( p = s; *p != EOS; p++ ) 
-// 	{ 
-// 		h = (h << 4) + (*p); 
-// 		if ( g = h & 0xf0000000 ) 
-// 		{ 
-// 			h = h ^ ( g >> 24 ); 
-// 			h = h ^ g; 
-// 		} 
-// 	} 
-// 	return h % TABLE_SIZE; 
-// }
-
-
-
-// void putInTable(Hashtable &hashtable, char *id, int value) {
-	
-// }
-
-// int getInTable(Hashtable &hashtable, char *id) {
-
-// }
-
-// void clearTable(Hashtable &hashtable){
-
-// }
-
-// int sizeTable(Hashtable &hashtable) {
-
-// }
-
-// void printTable(Hashtable &hashtable){
-
-// }

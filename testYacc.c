@@ -17,16 +17,13 @@ int main(int argc, char *argv[]){
 			printf("File \"%s\" does not exist\n", argv[1]);
 			exit(1);
 		}
-		printf("\n\nSTART PARSING\n\n");
 		yyin = fopen( argv[1] , "r" );
 		yyparse();
 		fclose( yyin );
 	} else {
-		printf("\n\nSTART PARSING\n\n");
 		yyparse();	
 	}
   	printf("\n\nDONE PARSING\n\n");
-  	printf("\n\nSyntax Tree:\n\n");
   	Tree * tree = getOutputTree();
   	treePrint(tree);
 }

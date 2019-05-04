@@ -25,8 +25,16 @@ typedef struct MapPrintProperties {
 	ListPrintProperties * listPrintProperties;
 } MapPrintProperties;
 
+typedef struct TreePrintProperties {
+	char * left;
+	char * right;
+	char * vertical;
+	char * horizontal;
+} TreePrintProperties;
+
 extern ListPrintProperties defaultPrintProperties;
 extern MapPrintProperties defaultMapPrintProperties;
+extern TreePrintProperties defaultTreePrintProperties;
 
 void resetOptions (ForEachOptions * options);
 
@@ -43,6 +51,8 @@ typedef struct Single {
 	void* element;
 } Single;
 
-
+char * copyString(char * stringValue);
+int getStringSize(char * stringValue);
+void stringInsert(char * totalString, char * insertString, int startIndex);
 
 #endif // UTILS_H

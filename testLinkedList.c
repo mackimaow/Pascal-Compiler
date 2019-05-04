@@ -6,8 +6,11 @@
 
 LinkedList * linkedlist;
 
-void printElem(ObjectType * type, void* element) {
-	printf("%c", *((char*)element));
+char * toCharString(ObjectType * type, void* element) {
+	char * stringValue = (char *) malloc(sizeof(char)*2);
+	stringValue[0] = *(char *)element;
+	stringValue[1] = '\0';
+	return stringValue;
 }
 
 void deconstElem(ObjectType * type, void* element) {
@@ -17,7 +20,7 @@ void deconstElem(ObjectType * type, void* element) {
 static ObjectType * CHAR;
 
 int main(void) {
-	CHAR = objectTypeInit(printElem, 0, deconstElem);
+	CHAR = objectTypeInit(toCharString, 0, deconstElem);
 
 	LinkedList * linkedList = linkedListInit(CHAR);
 	char * c = "Yo yo yo";
@@ -65,6 +68,21 @@ int main(void) {
 	linkedListPrint(linkedList);
 	printf("\n");
 	printf("Size: %d\n", size);
+
+	for(int i = 0; i < 8; i++)
+		linkedListPushBack( linkedList, c + i);
+	linkedListPrint(linkedList);
+	printf("\n");
+	size = linkedListGetSize(linkedList);
+	printf("Size: %d\n", size);
+
+
+	for(int i = 0; i < 8; i++) {
+		char * cd = (char*)linkedListDequeue( linkedList );
+		linkedListPrint(linkedList);
+		printf("\n");
+		printf("Size: %d Element Dequeued: %c\n", size, *cd);				
+	}
 
 
 	linkedListDestroy(linkedList);

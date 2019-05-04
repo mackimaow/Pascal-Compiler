@@ -1,5 +1,5 @@
 #include "stdio.h"
-
+#include "object.h"
 
 void test(int i, int j, int * k) {
 	printf("%d\n", *k);
@@ -9,6 +9,5 @@ void test(int i, int j, int * k) {
 
 
 int main() {
-	int thing[3] = {1, 2, 3};
-	test(0, 1, thing);
+	
 }
