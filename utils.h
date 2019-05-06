@@ -51,8 +51,12 @@ typedef struct Single {
 	void* element;
 } Single;
 
+
+int stringToInt(char * value);
+char * intToString(int integer);
 char * copyString(char * stringValue);
 int getStringSize(char * stringValue);
 void stringInsert(char * totalString, char * insertString, int startIndex);
+char * stringTakeLast(char * totalString, int index);
 
 #endif // UTILS_H

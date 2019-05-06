@@ -21,6 +21,10 @@ struct LinkedList {
 	LinkedNode * last;
 };
 
+struct Iterator {
+	LinkedNode * next;
+	LinkedNode * previous;
+};
 
 // Util functions
 
@@ -351,4 +355,51 @@ bool linkedListForEach (  LinkedList * linkedList, ForEach forEach, int numArgs,
 	free(parameterArray);
 	free(options);
 	return stopShort;
+}
+
+
+
+
+Iterator * iteratorInit(LinkedList * linkedList) {
+	Iterator * iterator = malloc(sizeof(Iterator));
+	iterator->next = linkedList->first;
+	iterator->previous = 0;
+	return iterator;
+}
+
+void iteratorDestroy(Iterator * iterator) {
+	free(iterator);
+}
+
+Iterator * iteratorInitBack(LinkedList * linkedList) {
+	Iterator * iterator = malloc(sizeof(Iterator));
+	iterator->next = 0;
+	iterator->previous = linkedList->last;
+	return iterator;
+}
+
+bool iteratorHasNext(Iterator * iterator) {
+	return iterator->next? true : false;
+}
+
+bool iteratorHasPrevious(Iterator * iterator) {
+	return iterator->previous? true : false;
+}
+
+void * iteratorGetNext(Iterator * iterator) {
+	if(iterator->next) {
+		iterator->previous = iterator->next;
+		iterator->next = iterator->previous->next;
+		return iterator->previous->element;
+	}
+	return 0;
+}
+
+void * iteratorGetPrevious(Iterator * iterator) {
+	if(iterator->previous) {
+		iterator->next = iterator->previous;
+		iterator->previous = iterator->next->previous;
+		return iterator->next->element;
+	}
+	return 0;
 }

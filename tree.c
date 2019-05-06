@@ -90,7 +90,7 @@ void treeAddNodes(Tree * parentTree, int numChildren, ...) {
 		va_list   argList;
 		va_start( argList, numChildren);
 		for( int i = 0; i < numChildren; i++ ) {
-			Tree * childTree = va_arg( argList, Tree * );
+			Tree * childTree = (Tree *) va_arg( argList, Tree * );
 			treeAddNode(parentTree, childTree);
 		}
   		va_end( argList );
@@ -235,7 +235,6 @@ static char * treeString ( char * stringBehind, Tree * parentTree ) {
 	currentIndex++;
 	stringInsert(temp, stringAfter, currentIndex);
 	temp[totalSize] = '\0';
-
 	free(stringAfter);
 	linkedListDestroy(stringList);
 	free(lastHorizontalString);

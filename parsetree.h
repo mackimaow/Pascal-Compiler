@@ -25,12 +25,17 @@ Tree * parseTreeSafelyAddNode(char * stringValue , TreeValue * reference, Tree *
 Tree * parseTreeSafelyAddLeafs(char * stringValue , TreeValue * reference, Tree * parentTree, int numberElements, ... );
 Tree * parseTreeSafelyAddLeaf(char * stringValue , TreeValue * reference, Tree * parentTree, void * element );
 
+void parseTreeSetLabel(Tree * tree, int labelValue);
+int parseTreeGetLabel(Tree * tree);
+
+void parseTreeSetType(Tree * tree, int type);
 int parseTreeGetType(Tree * tree);
 char * parseTreeGetAttribute(Tree * tree);
 int parseTreeGetLineNumberDeclared(Tree * tree);
 int parseTreeGetLineIndexDeclared(Tree * tree);
 
 Tree * parseTreeGetNullNode();
+bool parseTreeIsNull(Tree * tree);
 
 #endif // PARSE_TREE_H
 

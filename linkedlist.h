@@ -6,7 +6,8 @@
 #include "object.h"
 
 typedef struct LinkedList LinkedList;
-typedef struct LinkedNode LinkedNode ;
+typedef struct LinkedNode LinkedNode;
+typedef struct Iterator Iterator;
 
 LinkedList* linkedListInit ( ObjectType * elementType ) ;
 LinkedList* linkedListInitWithPrintProperties ( ObjectType * elementType, ListPrintProperties * printProperties);
@@ -37,5 +38,17 @@ void linkedListPrint (  LinkedList * linkedlist  );
 char* linkedListToString (  LinkedList * linkedlist  );
 
 bool  linkedListForEach (  LinkedList * linkedList, ForEach forEach, int numArgs, ...);
+
+
+// Iterator functions
+
+Iterator * iteratorInit(LinkedList * linkedList);
+void iteratorDestroy(Iterator * iterator);
+Iterator * iteratorInitBack(LinkedList * linkedList);
+bool iteratorHasNext(Iterator * iterator);
+bool iteratorHasPrevious(Iterator * iterator);
+void * iteratorGetNext(Iterator * iterator); 
+void * iteratorGetPrevious(Iterator * iterator); 
+
 
 #endif // LINKEDLIST_H

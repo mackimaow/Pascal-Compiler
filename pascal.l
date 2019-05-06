@@ -76,7 +76,7 @@ num [0-9]+(E[+-]?[0-9]+)?
 
 
 int yyerror(char * msg) {
-   fprintf(stderr, "\nERROR at %i:%i: %s\n", lineNumber, lineIndex, msg);
+   printf("\n[ERROR] PARSER at (%i:%i): %s\n", lineNumber, lineIndex, msg);
    exit(1);
 }
 

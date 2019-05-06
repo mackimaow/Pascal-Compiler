@@ -1,6 +1,6 @@
 .PHONY: all clean  runTestYacc runTestLex runTestSymbolTable runTestTree runTestHashTable runTestLinkedList
 
-ROUTINES = semantic_analyzer
+ROUTINES = semantic_analyzer.o code_generator.o
 YACC = y.tab.o
 LEX = lex.yy.o
 MISC = symboltable.o parsetree.o
@@ -9,9 +9,9 @@ UTILS = lexconstants.o utils.o object.o
 
 all: pcc
 
-
-pcc: pascal_compiler.c $(ROUTINES) $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UITLS)
-	gcc pascal_compiler $(ROUTINES) $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UITLS) -o pcc -ll -ly
+# final script
+pcc: pascal_compiler.c $(ROUTINES) $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS)
+	gcc pascal_compiler.c  $(ROUTINES) $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS) -o pcc -ll -ly -lm
 
 
 # yacc
@@ -32,10 +32,10 @@ lex.yy.c: pascal.l
 
 
 # Program Routines
-semantic_analyzer.o: semantic_analyzer.h semantic_analyzer.c
+semantic_analyzer.o: semantic_analyzer.h semantic_analyzer.c $(MISC) $(COLLECTIONS) $(UITLS)
 	gcc -c semantic_analyzer.c
 
-code_generator.o: code_generator.h code_generator.c 
+code_generator.o: code_generator.h code_generator.c  $(MISC) $(COLLECTIONS) $(UITLS)
 	gcc -c code_generator.c
 
 
@@ -110,22 +110,22 @@ runTestLinkedList: testLinkedList
 
 # test executables
 testYacc: testYacc.c $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS)
-	gcc testYacc.c $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS) -o testYacc -ll -ly
+	gcc testYacc.c  $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS) -o testYacc -ll -ly  -lm
 
 testLex: testLex.c symboltable.o $(LEX) $(COLLECTIONS) $(UTILS)
-	gcc testLex.c symboltable.o $(LEX) $(COLLECTIONS) $(UTILS) -o testLex -ll
+	gcc testLex.c symboltable.o $(LEX) $(COLLECTIONS) $(UTILS) -o testLex -ll  -lm
 
 testSymbolTable: testSymbolTable.c $(MISC) $(COLLECTIONS) $(UTILS)
-	gcc testSymbolTable.c $(MISC) $(COLLECTIONS) $(UTILS) -o testSymbolTable
+	gcc testSymbolTable.c $(MISC) $(COLLECTIONS) $(UTILS) -o testSymbolTable  -lm
 
 testHashTable: testHashTable.c $(COLLECTIONS) $(UTILS)
-	gcc testHashTable.c $(COLLECTIONS) $(UTILS) -o testHashTable
+	gcc testHashTable.c $(COLLECTIONS) $(UTILS) -o testHashTable  -lm
 
 testTree: testTree.c $(COLLECTIONS) $(UTILS)
-	gcc testTree.c $(COLLECTIONS) $(UTILS) -o testTree
+	gcc testTree.c $(COLLECTIONS) $(UTILS) -o testTree  -lm
 
 testLinkedList: testLinkedList.c $(COLLECTIONS) $(UTILS)
-	gcc testLinkedList.c $(COLLECTIONS) $(UTILS) -o testLinkedList
+	gcc testLinkedList.c $(COLLECTIONS) $(UTILS) -o testLinkedList  -lm
 
 
 # clean

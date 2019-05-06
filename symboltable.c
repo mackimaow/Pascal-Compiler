@@ -4,13 +4,16 @@
 #include "hashtable.h"
 #include "utils.h"
 #include "object.h"
+#include "parsetree.h"
+#include "lexconstants.h"
 #include "symboltable.h"
 
 
 #define TABLE_SIZE	211
 #define EOS		'\0'
 
-
+const int READ_PROCEDURE_ID = -1;
+const int WRITE_PROCEDURE_ID = -2;
 
 ListPrintProperties symbolTablePrintProperties = {"<--------SymbolTable_Top-------->\n", "\n", "\n<--------SymbolTable_Bot-------->\n"};
 /* ----------------------------------------------------------------------------- 
@@ -57,11 +60,12 @@ static bool searchAllForEach(ObjectType * objectType, int index, void * element,
 	char* identifier = (char*) parameters[0];
 	SearchResult * searchResult = (SearchResult*) parameters[1];
 	SymbolTableScope * tableScope = (SymbolTableScope *) element;
-	VariableAttr* variableAttr = hashTableGet(tableScope->hashTable, identifier);
+	VariableAttr * variableAttr = ( VariableAttr * ) hashTableGet(tableScope->hashTable, identifier);
 	if(variableAttr) {
 		searchResult->scopeName = tableScope->name;
 		searchResult->searchDepth = index;
-		searchResult->foundResult = variableAttr;
+		searchResult->foundResult = true;
+		searchResult->attributes = variableAttr;
 		return true;
 	}
 	return false;
@@ -75,9 +79,14 @@ static bool getScopeStringForEach(ObjectType * objectType, int index, void * ele
 }
 
 
+static void createSpecialProcedure(SymbolTable * symbolTable, char * procedureName, int procedureID){
+	TreeValue * specialValue = parseTreeInitTreeValue(procedureID, procedureName, 0, 0);
+	Tree * tree = parseTreeInit(specialValue, 0);
+	symbolTablePut(symbolTable, tree, tree);
+}
+
 
 // Definitions
-
 SymbolTable * symbolTableInit() {
 	if(!SCOPE_TYPE)
 		SCOPE_TYPE = objectTypeInit(symbolTableScopeToString, 0, destroySymbolTableScope);
@@ -86,41 +95,74 @@ SymbolTable * symbolTableInit() {
 	if(!VARIABLE_ATTR_TYPE)
 		VARIABLE_ATTR_TYPE = objectTypeInit(variableAttrToString, 0, destroyVariableAttr);
 	SymbolTable * symbolTable = linkedListInitWithPrintProperties(SCOPE_TYPE, &symbolTablePrintProperties);
+	
+	SymbolTableScope * symbolTableScope = malloc(sizeof(SymbolTableScope));
+	symbolTableScope->name = copyString("PASCAL");
+	symbolTableScope->hashTable = hashTableInit(TABLE_SIZE, hashpjw, STRING_TYPE, VARIABLE_ATTR_TYPE);
+	linkedListPush(symbolTable, symbolTableScope);
+
+	createSpecialProcedure(symbolTable, "read", READ_PROCEDURE_ID);
+	createSpecialProcedure(symbolTable, "write", WRITE_PROCEDURE_ID);
+
 	return symbolTable;
 }
 
-bool symbolTablePut(SymbolTable * symbolTable, char* identifier, VariableAttr * variableAttr) {
+SymbolTableScope * symbolTablePeakScope(SymbolTable * symbolTable) {
+	return (SymbolTableScope *) linkedListPeak(symbolTable);
+}
+
+
+bool symbolTablePut(SymbolTable * symbolTable, Tree * variableValue, Tree * variableType) {
 	int size = linkedListGetSize(symbolTable);
 	if(size != 0) {
 		SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
 		HashTable * hashTable = tableScope->hashTable;
-		return hashTablePut(hashTable, identifier, variableAttr);
+		VariableAttr * attributes = (VariableAttr *) malloc(sizeof(VariableAttr));
+		attributes->variableValue = variableValue;
+		attributes->variableType = variableType;
+		attributes->scope = 0;
+		char * variableName = parseTreeGetAttribute(variableValue);
+		return hashTablePut(hashTable, variableName, attributes);
 	}
 	return false;
 }
 
-void symbolTableSearchScope(SymbolTable * symbolTable, char* identifier, SearchResult * searchResult) {
-	searchResult->searchDepth = -1;
-	if(linkedListGetSize(symbolTable) > 0){ 
-		SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
-		searchResult->scopeName = tableScope->name;
-		searchResult->searchDepth = 0;
-		searchResult->foundResult = hashTableGet(tableScope->hashTable, identifier);
-	}
+void symbolTableRemove(SymbolTable * symbolTable,  char * variableName) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	HashTable * hashTable = tableScope->hashTable;
+	hashTableRemove(hashTable, variableName);
 }
 
-void symbolTableSearchAll(SymbolTable * symbolTable, char* identifier, SearchResult * searchResult) {
-	searchResult->searchDepth = -1;
-	if(linkedListGetSize(symbolTable) > 0)
-		linkedListForEach(symbolTable, searchAllForEach, 2, identifier, searchResult);
-}
 
-void symbolTablePushScope(SymbolTable * symbolTable, char* scopeName) {
+bool symbolTableCreateScope(SymbolTable * symbolTable, Tree * properScopeLocation) {
+	char * name = parseTreeGetAttribute(properScopeLocation);
+	int type = parseTreeGetType(properScopeLocation);
 
 	SymbolTableScope * symbolTableScope = malloc(sizeof(SymbolTableScope));
-	symbolTableScope->name = scopeName;
+	symbolTableScope->name 					= name;
+	symbolTableScope->scopeLocation 		= properScopeLocation;
+	symbolTableScope->maxNumberOfTempRegs 	= 0;
+	symbolTableScope->numberOfWhileLoops 	= 0;
+	symbolTableScope->numberOfIfStatements 	= 0;
+	symbolTableScope->numberOfForLoops 		= 0;
 	symbolTableScope->hashTable = hashTableInit(TABLE_SIZE, hashpjw, STRING_TYPE, VARIABLE_ATTR_TYPE);
-	
+
+	VariableAttr * attributes = (VariableAttr *) malloc(sizeof(VariableAttr));
+	attributes->variableValue 	= properScopeLocation;
+	attributes->variableType 	= properScopeLocation;
+	attributes->scope 	= symbolTableScope;
+
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	HashTable * hashTable = tableScope->hashTable;
+	return hashTablePut(hashTable, name, attributes);
+}
+
+void symbolTablePushScope(SymbolTable * symbolTable, char* variableName) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	HashTable * hashTable = tableScope->hashTable;
+
+	VariableAttr * attributes = (VariableAttr *) hashTableGet(hashTable, variableName);
+	SymbolTableScope * symbolTableScope = attributes->scope;
 	linkedListPush(symbolTable, symbolTableScope);
 }
 
@@ -128,11 +170,91 @@ void symbolTablePopScope(SymbolTable * symbolTable) {
 	linkedListPop(symbolTable);
 }
 
+
+bool symbolTableSearchScope(SymbolTable * symbolTable, char* variableName, SearchResult * searchResult) {
+	searchResult->searchDepth = -1;
+	if(linkedListGetSize(symbolTable) > 0){ 
+		SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+		searchResult->scopeName = tableScope->name;
+		searchResult->searchDepth = 0;
+		searchResult->attributes = (VariableAttr *) hashTableGet(tableScope->hashTable, variableName);
+		searchResult->foundResult = searchResult->attributes? true : false;
+		return searchResult->foundResult? true : false;
+	}
+	return false;
+}
+
+bool symbolTableSearchAll(SymbolTable * symbolTable, char* variableName, SearchResult * searchResult) {
+	searchResult->searchDepth = -1;
+	if(linkedListGetSize(symbolTable) > 0)
+		return linkedListForEach(symbolTable, searchAllForEach, 2, variableName, searchResult);
+	return false;
+}
+
+char * symbolTableGetScopeName(SymbolTable * symbolTable) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	return tableScope->name;
+}
+
+
+
+
+
+
+void symbolTableIncrWhile(SymbolTable * symbolTable) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	tableScope->numberOfWhileLoops++;
+}
+
+void symbolTableIncrFor(SymbolTable * symbolTable) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	tableScope->numberOfForLoops++;
+}
+
+void symbolTableIncrIf(SymbolTable * symbolTable) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	tableScope->numberOfIfStatements++;
+}
+
+void symbolTableUpdateTempRegs(SymbolTable * symbolTable, int newValue) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	if(newValue > tableScope->maxNumberOfTempRegs)
+		tableScope->maxNumberOfTempRegs = newValue;
+}
+
+int symbolTableGetNumWhile(SymbolTable * symbolTable) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	return tableScope->numberOfWhileLoops;
+}
+
+int symbolTableGetNumFor(SymbolTable * symbolTable) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	return tableScope->numberOfForLoops;
+}
+
+int symbolTableGetNumIf(SymbolTable * symbolTable) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	return tableScope->numberOfIfStatements;
+}
+
+
+int symbolTablegetNumTempRegs(SymbolTable * symbolTable) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	return tableScope->maxNumberOfTempRegs;
+}
+
+
+
+
+
+
+
 char* symbolTableScopeTraceString(SymbolTable * symbolTable, ListPrintProperties * listPrintProperties) {
 	int tableSize = linkedListGetSize(symbolTable);
 	if(tableSize > 0) {
 		LinkedList * stringList = linkedListInitWithPrintProperties(&STRING_OBJECT, listPrintProperties);
 		linkedListForEach(symbolTable, getScopeStringForEach, 1, stringList);
+		linkedListPop(stringList);
 		char * temp = linkedListToString(stringList);
 		linkedListDestroy(stringList);
 		return temp;
@@ -194,10 +316,11 @@ static char * symbolTableScopeToString (ObjectType * type, void* value) {
 }
 
 static void destroySymbolTableScope(ObjectType * type, void* value) {
-	SymbolTableScope * scope = (SymbolTableScope *) value;
-	hashTableDestroy(scope->hashTable);
+	// NOT  NECCESSARY
+	// SymbolTableScope * scope = (SymbolTableScope *) value;
+	// hashTableDestroy(scope->hashTable);
 	// free(scope->name);
-	free(scope);
+	// free(scope);
 }
 
 //  STRING_TYPE
@@ -220,9 +343,10 @@ static void destroyString (ObjectType * type, void* value) {
 }
 
 //  VARIABLE_ATTR_TYPE
-static char * variableAttrToString(ObjectType * type, void* value) {
+static char * variableAttrToString(ObjectType * objectType, void* value) {
 	VariableAttr * variableAttr = (VariableAttr*) value;
-	char * str = variableAttr->type;
+	int type = parseTreeGetType(variableAttr->variableValue);
+	char * str = lexConstantToString(type);
 	int stringSize = getStringSize(str);
 	char * temp = malloc(sizeof(char) * (stringSize + 1));
 	stringInsert(temp, str, 0);
@@ -230,8 +354,9 @@ static char * variableAttrToString(ObjectType * type, void* value) {
 	return temp;
 }
 
-static void destroyVariableAttr(ObjectType * type, void* value) {
-	VariableAttr * variableAttr = (VariableAttr*) value;
+static void destroyVariableAttr(ObjectType * objectType, void* value) {
+	// NOT NECCESSARY
+	// VariableAttr * variableAttr = (VariableAttr*) value;
 	// free(variableAttr->type);
 	// free(variableAttr);
 }

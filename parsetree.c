@@ -5,6 +5,7 @@
 
 struct TreeValue {
 	int type;
+	int labelValue;
 	char * attrValue;
 	int lineNumberDeclared;
 	int lineIndexDeclared;
@@ -23,22 +24,50 @@ static char * treeValueToString(ObjectType * objectType, void * value) {
 	char * attrString = treeValue->attrValue;
 	char * barrier;
 	int attrStringSize = 0;
-	if(attrString)
-		attrStringSize = getStringSize(attrString);
-	if(!attrString || treeValue->type < 0 )
+	int labelValue = treeValue->labelValue;
+	char * labelString;
+	if(labelValue >= 0) {
+		char * frontString = " (";
+		char * middleString = intToString(labelValue);
+		char * backString = ") ";
+		int frontStringLength = getStringSize(frontString);
+		int middleStringLength = getStringSize(middleString);
+		int backStringLength = getStringSize(backString);
+		int totalSize = frontStringLength + middleStringLength + backStringLength;
+		labelString = malloc(sizeof(char) * (totalSize + 1));
+		stringInsert(labelString, frontString, 0);
+		stringInsert(labelString, middleString, frontStringLength);
+		stringInsert(labelString, backString, frontStringLength+middleStringLength);
+		labelString[totalSize] = '\0';
+		free(middleString);
+	} else{
+		labelString = copyString("");
+	}
+	int labelSize = getStringSize(labelString); 
+
+	if(!attrString || treeValue->type < 0 ) {
 		barrier = "";
-	else
+	} else {
 		barrier = "|";
+	}
+	if(attrString){
+		attrStringSize = getStringSize(attrString);
+	} else{
+		attrString = "";
+	}
+
 	int barrierSize = getStringSize(barrier); 
 	int lexTypeSize = getStringSize(lexType);
 
-	int totalSize = lexTypeSize + attrStringSize + barrierSize;
+	int totalSize = lexTypeSize + barrierSize + attrStringSize + labelSize;
 	char * temp = malloc(sizeof(char) * (totalSize + 1));
+	
 	stringInsert(temp, lexType, 0);
 	stringInsert(temp, barrier, lexTypeSize);
-	if(attrString)
-		stringInsert(temp, attrString, lexTypeSize+barrierSize);
+	stringInsert(temp, attrString, lexTypeSize + barrierSize);
+	stringInsert(temp, labelString, lexTypeSize + barrierSize + attrStringSize);
 	temp[totalSize] = '\0';
+	free(labelString);
 	free(lexType);
 	return temp;
 }
@@ -55,6 +84,7 @@ static ObjectType * getTreeValueType() {
 TreeValue * parseTreeInitTreeValue(int type, char * attrValue, int lineNumberDeclared, int lineIndexDeclared) {
 	TreeValue * treeValue = malloc(sizeof(TreeValue *));
 	treeValue->type = type;
+	treeValue->labelValue = -1;
 	if(attrValue)
 		treeValue->attrValue = copyString(attrValue);
 	else
@@ -185,6 +215,23 @@ Tree * parseTreeSafelyAddLeaf(char * stringValue , TreeValue * reference, Tree *
 }
 
 
+void parseTreeSetLabel(Tree * tree, int labelValue) {
+	TreeValue * treeValue = (TreeValue *) treeGetElement(tree);
+	treeValue->labelValue = labelValue;
+}
+
+
+int parseTreeGetLabel(Tree * tree) {
+	TreeValue * treeValue = (TreeValue *) treeGetElement(tree);
+	return treeValue->labelValue;
+}
+
+
+void parseTreeSetType(Tree * tree, int type) {
+	TreeValue * treeValue = (TreeValue *) treeGetElement(tree);
+	treeValue->type = type;
+}
+
 
 int parseTreeGetType(Tree * tree) {
 	TreeValue * treeValue = (TreeValue *) treeGetElement(tree);
@@ -210,4 +257,9 @@ Tree * parseTreeGetNullNode(char * stringToPrint) {
 	TreeValue * temp = parseTreeInitTreeValue(NULL_TYPE, stringToPrint, 0, 0); 
 	Tree * NULL_TREE_NODE = parseTreeInit(temp, 0);
 	return NULL_TREE_NODE;
+}
+
+bool parseTreeIsNull(Tree * tree) {
+	int type = parseTreeGetType(tree);
+	return type == NULL_TYPE;
 }

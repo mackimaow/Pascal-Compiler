@@ -197,7 +197,7 @@ term: factor			{ $$ = $1; }
 	| term L_MULOP factor	{ $$ = parseTreeInit($2, 2, TREE_NODE, $1, TREE_NODE, $3); }
 	;
 
-factor: L_ID 							{ $$ = parseTreeInit($1, 0); }
+factor: variable 						{ $$ = $1; }
 	| L_ID L_LP expression_list L_RP 	{ $$ = parseTreeInit($1, 1, TREE_NODE, $3); }
 	| L_NUM 							{ $$ = parseTreeInit($1, 0); }
 	| L_LP expression L_RP 				{ $$ = $2; }
