@@ -130,6 +130,6 @@ testLinkedList: testLinkedList.c $(COLLECTIONS) $(UTILS)
 
 # clean
 clean:
-	rm -f *.o *.gch pcc *.out y.tab.* lex.yy.* *.output
+	rm -f *.o *.gch pcc *.out y.tab.* lex.yy.* *.output *.asm
 	rm -f testHashTable testLinkedList testSymbolTable testTree testLex testYacc
 	

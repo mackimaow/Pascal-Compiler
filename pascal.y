@@ -80,6 +80,8 @@ Tree * getOutputTree() {
 %type <tree> optional_statements
 %type <tree> statement_list
 %type <tree> statement
+%type <tree> matched_stmt
+%type <tree> unmatched_stmt
 %type <tree> variable
 %type <tree> procedure_statement
 %type <tree> expression_list
@@ -159,12 +161,21 @@ statement_list:  statement  			{ $$ = parseTreeInitNew("STATEMENT_LIST", 0, 1, T
 	;
 
 
-statement:  variable  L_ASSIGNOP  expression  										{ $$ = parseTreeInit($2, 2, TREE_NODE, $1, TREE_NODE, $3); }
+statement:  matched_stmt		{ $$ = $1; }
+	| unmatched_stmt			{ $$ = $1; }
+	;
+
+
+matched_stmt:  L_IF expression L_THEN matched_stmt L_ELSE matched_stmt				{ $$ = parseTreeInit($1, 3, TREE_NODE, $2, TREE_NODE, $4, TREE_NODE, $6); }
+	|  	variable  L_ASSIGNOP  expression  											{ $$ = parseTreeInit($2, 2, TREE_NODE, $1, TREE_NODE, $3); }
 	|	procedure_statement															{ $$ = $1; }
 	|	compound_statement															{ $$ = $1; }
-	|	L_IF  expression  L_THEN  statement  L_ELSE  statement 						{ $$ = parseTreeInit($1, 3, TREE_NODE, $2, TREE_NODE, $4, TREE_NODE, $6); }
 	|	L_WHILE  expression  L_DO  statement 										{ $$ = parseTreeInit($1, 2, TREE_NODE, $2, TREE_NODE, $4); }
 	|	L_FOR  L_ID  L_ASSIGNOP  expression  L_TO  expression  L_DO  statement 		{ $$ = parseTreeInit($1, 4, TREE_LEAF, $2, TREE_NODE, $4, TREE_NODE, $6, TREE_NODE, $8); }
+	;
+
+unmatched_stmt: L_IF expression L_THEN  statement							{ $$ = parseTreeInit($1, 2, TREE_NODE, $2, TREE_NODE, $4); }
+	| L_IF expression L_THEN matched_stmt L_ELSE unmatched_stmt				{ $$ = parseTreeInit($1, 3, TREE_NODE, $2, TREE_NODE, $4, TREE_NODE, $6); }
 	;
 
 variable:   L_ID						{  $$ = parseTreeInit($1, 0);  }
@@ -186,7 +197,6 @@ expression:  simple_expression							{ $$ = $1; }
 	;
 	
 simple_expression: term 			{ $$ = $1; }
-	| L_ADD term 					{ $$ = parseTreeInit($1, 1, TREE_NODE, $2); }
 	| L_SUB term 					{ $$ = parseTreeInit($1, 1, TREE_NODE, $2); }
 	| simple_expression L_ADD term 	{ $$ = parseTreeInit($2, 2, TREE_NODE, $1, TREE_NODE, $3); }
 	| simple_expression L_SUB term 	{ $$ = parseTreeInit($2, 2, TREE_NODE, $1, TREE_NODE, $3); }

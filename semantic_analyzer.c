@@ -9,6 +9,14 @@
 
 
 
+// things that may change for gencode:
+static int ARRAY_TYPE_ARGUMENT_LABEL = 0;
+static int FUNCTION_WITH_NO_PARAMETERS = 0;
+static int SINGLE_NODE_EXPRESSION = 0;
+
+
+
+
 // Misc
 ListPrintProperties tracePrintProperties = {"", ".", ""};
 static bool LEFT_SIDE = true;
@@ -68,6 +76,9 @@ static void checkSubPrograms(SymbolTable * symbolTable, Tree * programLocations)
 			Tree * subProgram = (Tree *) iteratorGetNext(iterator);
 			int type = parseTreeGetType(subProgram);
 			bool isFunction = type == LL_FUNCTION;
+
+	
+	
 			if(isFunction)
 				checkFunction(symbolTable, subProgram);
 			else
@@ -111,6 +122,7 @@ static void checkFunction(SymbolTable * symbolTable, Tree * function) {
 	addVariables(symbolTable, parameters);
 	addVariables(symbolTable, declarations);
 	symbolTableRemove(symbolTable, function_name); // temporarly add function name to block others declarations with same name [end]
+	
 	addSubPrograms(symbolTable, subprogram_declarations);
 	checkSubPrograms(symbolTable, subprogram_declarations);
 	checkStatements(symbolTable, statement_list);
@@ -118,14 +130,17 @@ static void checkFunction(SymbolTable * symbolTable, Tree * function) {
 }
 
 static void checkStatements(SymbolTable * symbolTable, Tree * statements){
+	int numberOfStatements = 0;
 	if(!parseTreeIsNull(statements)) {
 		Iterator * iterator = iteratorInit(treeGetChildren(statements));
 		while (iteratorHasNext(iterator)) {
 			Tree * statement = (Tree *) iteratorGetNext(iterator);
 			checkStatement(symbolTable, statement);
+			numberOfStatements++;
 		}
 		iteratorDestroy(iterator);
 	}
+	parseTreeSetLabel(statements, numberOfStatements);
 }
 
 
@@ -160,7 +175,9 @@ static void checkStatement(SymbolTable * symbolTable, Tree * statement) {
 			numberOfRegisters = parseTreeGetLabel(if_condition);
 			symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
 			checkStatement(symbolTable, treeGetChild(statement, 1));
-			checkStatement(symbolTable, treeGetChild(statement, 2));
+			if(treeGetSize(statement) == 3 )
+				checkStatement(symbolTable, treeGetChild(statement, 2));
+			break;
 		case LL_WHILE:
 			parseTreeSetLabel(statement, symbolTableGetNumWhile(symbolTable));
 			symbolTableIncrWhile(symbolTable);
@@ -178,9 +195,11 @@ static void checkStatement(SymbolTable * symbolTable, Tree * statement) {
 			Tree * expression1 = treeGetChild(statement, 1);
 			checkExpression(symbolTable, expression1);
 			numberOfRegisters = parseTreeGetLabel(expression1);
+			symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
 			Tree * expression2 = treeGetChild(statement, 2);
 			checkExpression(symbolTable, expression2);
-			numberOfRegisters = parseTreeGetLabel(while_condition);
+			numberOfRegisters = parseTreeGetLabel(expression2);
+			symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
 			checkStatement(symbolTable, treeGetChild(statement, 3));
 			break;
 		default:
@@ -257,6 +276,7 @@ static void addVariables(SymbolTable * symbolTable, Tree * variableLocations) {
 
 
 static void addSubPrograms(SymbolTable * symbolTable, Tree * programLocations) {
+	int numberOfSubPrograms = 0;
 	if(!parseTreeIsNull(programLocations)) {
 		int listSize = treeGetSize(programLocations);
 		Iterator * iterator = iteratorInit(treeGetChildren(programLocations));
@@ -281,9 +301,11 @@ static void addSubPrograms(SymbolTable * symbolTable, Tree * programLocations) {
 				exit(1);
 			}
 			symbolTableCreateScope(symbolTable, sub_program);
+			numberOfSubPrograms++;
 		}
 		iteratorDestroy(iterator);
 	}
+	parseTreeSetLabel(programLocations, numberOfSubPrograms);
 }
 
 
@@ -358,6 +380,7 @@ static void checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, i
 			}
 
 			iteratorDestroy(iterator);
+			parseTreeSetType(subProgram, actualType);
 			return; // no more checking for write procedure
 		}
 
@@ -442,7 +465,7 @@ static void checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, i
 					checkVariableName(symbolTable, argument, RIGHT_SIDE, identifierType);
 					
 
-					parseTreeSetLabel(argument, 0);			// TODO: MIGHT HAVE TO CHANGE THIS
+					parseTreeSetLabel(argument, ARRAY_TYPE_ARGUMENT_LABEL);			// TODO: MIGHT HAVE TO CHANGE THIS
 				} else {
 					checkExpression(symbolTable, argument);
 				}
@@ -486,19 +509,81 @@ static void checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, i
 			printf("[ERROR] %s \"%s\" defined at (%i,%i) was called with no arguments when it should have %i parameters at (%i,%i). [TRACE: %s]\n", 
 			actualProgramTypeString, program_name, previousLineDeclared, previousLineIndexDeclared, numberOfParameters, lineDeclared, lineIndexDeclared, trace);
 			exit(1);
-		}
+		} 
 		if(type == LL_FUNCTION)
-			parseTreeSetLabel(subProgram, 0);			// TODO: MIGHT HAVE TO CHANGE THIS
+			parseTreeSetLabel(subProgram, FUNCTION_WITH_NO_PARAMETERS);			// TODO: MIGHT HAVE TO CHANGE THIS
 	}
 
 }
 
 
 static void checkExpression(SymbolTable * symbolTable, Tree * expression) {
-	// char * variable
-	// if () {
+	int expressionType = parseTreeGetType(expression);
+	if (expressionType == LL_ID) {
+		SearchResult searchResult;
+		char * variableName = parseTreeGetAttribute(expression);
+		bool foundResult = symbolTableSearchAll(symbolTable, variableName, &searchResult);
+		if(!foundResult) {
+			if ( treeIsLeaf (expression) ) {
+				checkVariableName(symbolTable, expression, RIGHT_SIDE, 0);
+			} else{
+				Tree * child = treeGetChild(expression, 0);
+				int childType = parseTreeGetType(child);
+				if (childType < LL_PROGRAM)
+					checkSubProgramName(symbolTable, expression, LL_FUNCTION);
+				else
+					checkVariableName(symbolTable, expression, RIGHT_SIDE, 0);
+			}
+		} else {
+			Tree * actualTypeLocation = searchResult.attributes->variableValue;
+			int actualType = parseTreeGetType(actualTypeLocation);
+			if(actualType != LL_ID) {
+				checkSubProgramName(symbolTable, expression, LL_FUNCTION);
+			} else {
+				checkVariableName(symbolTable, expression, RIGHT_SIDE, 0);
+				if ( ! treeIsLeaf(expression) ) {
+					Tree * index = treeGetChild(expression, 0);
+					checkExpression(symbolTable, index);
+					int indexLabel = parseTreeGetLabel(index);
+					parseTreeSetLabel(expression, indexLabel);
+				} else {
+					parseTreeSetLabel(expression, SINGLE_NODE_EXPRESSION);
+				}
+			}
+		}
+	} else if (expressionType == LL_NUM) {
+		parseTreeSetLabel(expression, SINGLE_NODE_EXPRESSION);
+	}else{
 
-	// }
+		int childrenSize = treeGetSize(expression);
+		if(childrenSize == 1) {
+			Tree * onlyChild = treeGetChild(expression, 0);
+			checkExpression(symbolTable, onlyChild);
+			int childLabel = parseTreeGetLabel(onlyChild);
+			parseTreeSetLabel(expression, childLabel);
+		} else {
+			Tree * leftChild = treeGetChild(expression, 0);
+			Tree * rightChild = treeGetChild(expression, 1);
+			checkExpression(symbolTable, leftChild);
+			checkExpression(symbolTable, rightChild);
+			int leftChildLabel = parseTreeGetLabel(leftChild);
+			int rightChildLabel = parseTreeGetLabel(rightChild);
+			if (leftChildLabel == 0) {
+				parseTreeSetLabel(leftChild, 1);
+				leftChildLabel = 1;	
+			}
+			if (leftChildLabel != rightChildLabel) {
+				if (leftChildLabel > rightChildLabel) {
+					parseTreeSetLabel(expression, leftChildLabel);
+				} else {
+					parseTreeSetLabel(expression, rightChildLabel);
+				}
+			} else {
+				parseTreeSetLabel(expression, leftChildLabel + 1);
+			}
+		}
+
+	}
 }
 
 
@@ -601,7 +686,7 @@ static void checkVariableName(SymbolTable * symbolTable, Tree * variable, bool s
 			Tree * actualUpperBoundLocation = treeGetChild(actualVariableType, 1);
 			Tree * lowerBoundLocation = treeGetChild(arrayType, 0);
 			Tree * upperBoundLocation = treeGetChild(arrayType, 1);
-			
+
 			int actualUpperBound = parseTreeGetLabel(actualUpperBoundLocation);
 			int actualLowerBound = parseTreeGetLabel(actualLowerBoundLocation);
 			int upperBound = parseTreeGetLabel(upperBoundLocation);

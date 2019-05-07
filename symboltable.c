@@ -12,9 +12,6 @@
 #define TABLE_SIZE	211
 #define EOS		'\0'
 
-const int READ_PROCEDURE_ID = -1;
-const int WRITE_PROCEDURE_ID = -2;
-
 ListPrintProperties symbolTablePrintProperties = {"<--------SymbolTable_Top-------->\n", "\n", "\n<--------SymbolTable_Bot-------->\n"};
 /* ----------------------------------------------------------------------------- 
  * hashpjw

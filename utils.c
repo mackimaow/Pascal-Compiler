@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
@@ -7,6 +8,7 @@ ListPrintProperties defaultPrintProperties = {"[ ",", "," ]"};
 MapPrintProperties defaultMapPrintProperties = {"( "," : "," )", &defaultPrintProperties};
 TreePrintProperties defaultTreePrintProperties = {"[", "]", " |", "__________"};
 
+
 void resetOptions (ForEachOptions * options) {
 	options->remove = false;
 	options->insert = 0;
@@ -14,14 +16,13 @@ void resetOptions (ForEachOptions * options) {
 
 
 char * intToString(int integer) {
-	if(integer == 0) {
+	if(integer == 0)
 		return copyString("0");
-	}
 	int totalSize = 0;
 	int tempValue = integer;
 	bool neg = tempValue < 0;
 	if(neg) {
-		totalSize *= -1;
+		tempValue *= -1;
 		totalSize++;
 	}
 	while(tempValue != 0) {
@@ -29,17 +30,7 @@ char * intToString(int integer) {
 		totalSize++;
 	}
 	char * temp = malloc(sizeof(char) * (totalSize + 1));
-	int i = 0;
-	if(neg) {
-		temp[i] = '-'; 
-		i++;
-	}
-	while(integer != 0) {
-		temp[i] = (integer % 10) + '0';
-		integer /= 10;
-		i++;
-	}
-	temp[totalSize] = '\0';
+	sprintf(temp, "%i", integer);
 	return temp;
 }
 

@@ -8,8 +8,8 @@
 
 #define SymbolTable LinkedList
 
-extern const int READ_PROCEDURE_ID;
-extern const int WRITE_PROCEDURE_ID;
+#define READ_PROCEDURE_ID -1
+#define WRITE_PROCEDURE_ID -2
 
 typedef struct SymbolTableScope {
 	char* name;
