@@ -264,7 +264,7 @@ __example_getIndex_for_end_0:
 
 	mov ebx,ebp
 
-	add ebx,-8
+	add ebx,48
 	mov eax,[ebx]
 
 	mov edx,eax
@@ -406,7 +406,7 @@ __example_for_end_0:
 
 	push 0
 
-	mov eax,3
+	mov eax,4
 
 	push eax
 	mov ebx,ebp
@@ -460,6 +460,28 @@ __example_for_end_0:
 
 	add ebx,-12
 	mov eax,[ebx]
+
+	mov [esp],eax
+	call _write
+	mov eax,4
+
+	mov edx,eax
+	mov ebx,ebp
+	add ebx,-16
+	mov eax,[ebx]
+	cmp edx,eax
+	jl _error
+	mov eax,[ebx-4]
+	cmp edx,eax
+	jg _error
+	mov eax,[ebx]
+	sub edx,eax
+	sub ebx,8
+	mov eax,edx 
+	mov edx,4 
+	mul edx
+	 sub ebx,eax
+	mov eax,[ebx] 
 
 	mov [esp],eax
 	call _write

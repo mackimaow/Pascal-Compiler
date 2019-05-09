@@ -17,7 +17,7 @@ program example(input, output);
 		begin
 			arrayValue[indexTemp] := arrayValue[indexTemp] + 1
 		end;
-	   	getIndex := arrayValue[indexTemp]
+	   	getIndex := arrayValue[index]
 	end;	
 
 	// procedure gcd2;
@@ -47,8 +47,8 @@ begin
 	for x := 3 to 10 do
 		temp[x] := x;
 
-	y := getIndex(3, temp);
-	write(y)
+	y := getIndex(4, temp);
+	write(y, temp[4])
 
 	// write(gcd(112, 24))
 	// x := 2;
