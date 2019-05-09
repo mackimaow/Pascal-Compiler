@@ -6,17 +6,18 @@ LEX = lex.yy.o
 MISC = symboltable.o parsetree.o
 COLLECTIONS = hashtable.o tree.o linkedlist.o
 UTILS = lexconstants.o utils.o object.o
+GCC = -std=gnu99
 
 all: pcc
 
 # final script
 pcc: pascal_compiler.c $(ROUTINES) $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS)
-	gcc pascal_compiler.c  $(ROUTINES) $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS) -o pcc -ll -ly -lm
+	gcc pascal_compiler.c $(GCC) $(ROUTINES) $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS) -o pcc -ll -ly -lm
 
 
 # yacc
 y.tab.o: y.tab.c tree.h $(LEX) $(MISC) $(COLLECTIONS) $(UITLS)
-	gcc -c y.tab.c
+	gcc -c $(GCC) y.tab.c
 
 y.tab.c: pascal.y  
 	yacc -y -dv pascal.y
@@ -24,7 +25,7 @@ y.tab.c: pascal.y
 
 # lex
 lex.yy.o: lex.yy.c  $(MISC) $(COLLECTIONS) $(UITLS)
-	gcc -c lex.yy.c
+	gcc -c $(GCC) lex.yy.c
 
 lex.yy.c: pascal.l  
 	lex -l pascal.l 
@@ -33,41 +34,41 @@ lex.yy.c: pascal.l
 
 # Program Routines
 semantic_analyzer.o: semantic_analyzer.h semantic_analyzer.c $(MISC) $(COLLECTIONS) $(UITLS)
-	gcc -c semantic_analyzer.c
+	gcc -c $(GCC) semantic_analyzer.c
 
 code_generator.o: code_generator.h code_generator.c  $(MISC) $(COLLECTIONS) $(UITLS)
-	gcc -c code_generator.c
+	gcc -c $(GCC) code_generator.c
 
 
 # Misc
 
 symboltable.o: symboltable.h symboltable.c $(COLLECTIONS) $(UITLS)
-	gcc -c symboltable.c
+	gcc -c $(GCC) symboltable.c
 
 parsetree.o: parsetree.h parsetree.c $(COLLECTIONS) $(UITLS)
-	gcc -c parsetree.c
+	gcc -c $(GCC) parsetree.c
 
 # generic custom collections
 
 hashtable.o: hashtable.h hashtable.c linkedlist.o $(UITLS)
-	gcc -c hashtable.c
+	gcc -c $(GCC) hashtable.c
 
 tree.o: tree.h tree.c linkedlist.o $(UITLS)
-	gcc -c tree.c
+	gcc -c $(GCC) tree.c
 
 linkedlist.o: linkedlist.h linkedlist.c $(UITLS)
-	gcc -c linkedlist.c 
+	gcc -c $(GCC) linkedlist.c 
 
 
 # Utility
 lexconstants.o: lexconstants.h lexconstants.c
-	gcc -c lexconstants.c 
+	gcc -c $(GCC) lexconstants.c 
 
 utils.o: utils.c utils.h
-	gcc -c utils.c
+	gcc -c $(GCC) utils.c
 
 object.o: object.c object.h
-	gcc -c object.c
+	gcc -c $(GCC) object.c
 
 
 # run tests
@@ -110,22 +111,22 @@ runTestLinkedList: testLinkedList
 
 # test executables
 testYacc: testYacc.c $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS)
-	gcc testYacc.c  $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS) -o testYacc -ll -ly  -lm
+	gcc testYacc.c  $(GCC) $(YACC) $(LEX) $(MISC) $(COLLECTIONS) $(UTILS) -o testYacc -ll -ly  -lm
 
 testLex: testLex.c symboltable.o $(LEX) $(COLLECTIONS) $(UTILS)
-	gcc testLex.c symboltable.o $(LEX) $(COLLECTIONS) $(UTILS) -o testLex -ll  -lm
+	gcc testLex.c symboltable.o $(GCC) $(LEX) $(COLLECTIONS) $(UTILS) -o testLex -ll  -lm
 
 testSymbolTable: testSymbolTable.c $(MISC) $(COLLECTIONS) $(UTILS)
-	gcc testSymbolTable.c $(MISC) $(COLLECTIONS) $(UTILS) -o testSymbolTable  -lm
+	gcc testSymbolTable.c $(GCC) $(MISC) $(COLLECTIONS) $(UTILS) -o testSymbolTable  -lm
 
 testHashTable: testHashTable.c $(COLLECTIONS) $(UTILS)
-	gcc testHashTable.c $(COLLECTIONS) $(UTILS) -o testHashTable  -lm
+	gcc testHashTable.c $(GCC) $(COLLECTIONS) $(UTILS) -o testHashTable  -lm
 
 testTree: testTree.c $(COLLECTIONS) $(UTILS)
-	gcc testTree.c $(COLLECTIONS) $(UTILS) -o testTree  -lm
+	gcc testTree.c $(GCC) $(COLLECTIONS) $(UTILS) -o testTree  -lm
 
 testLinkedList: testLinkedList.c $(COLLECTIONS) $(UTILS)
-	gcc testLinkedList.c $(COLLECTIONS) $(UTILS) -o testLinkedList  -lm
+	gcc testLinkedList.c $(GCC) $(COLLECTIONS) $(UTILS) -o testLinkedList  -lm
 
 
 # clean
