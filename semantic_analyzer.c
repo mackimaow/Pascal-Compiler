@@ -27,7 +27,7 @@ static bool RIGHT_SIDE = false;
 
 static void addVariables(SymbolTable * symbolTable, Tree * variableLocations);
 static void addSubPrograms(SymbolTable * symbolTable, Tree * programLocations);
-static void checkSubProgramName( SymbolTable * symbolTable, Tree * statementCall, int type );
+static int checkSubProgramName( SymbolTable * symbolTable, Tree * statementCall, int type );
 
 // implemented functions
 
@@ -35,10 +35,13 @@ static void checkProgram(SymbolTable * symbolTable, Tree * program);
 static void checkSubPrograms(SymbolTable * symbolTable, Tree * programLocations);
 static void checkProcedure(SymbolTable * symbolTable, Tree * procedure);
 static void checkFunction(SymbolTable * symbolTable, Tree * function);
-static void checkStatements(SymbolTable * symbolTable, Tree * statements);
-static void checkStatement(SymbolTable * symbolTable, Tree * statement);
-static void checkExpression(SymbolTable * symbolTable, Tree * expression);
-static void checkVariableName(SymbolTable * symbolTable, Tree * variable, bool sideCalled, Tree * arrayType); // arrayType is optional and is used if whole array is expected
+static bool checkStatements(SymbolTable * symbolTable, Tree * statements);
+static bool checkStatement(SymbolTable * symbolTable, Tree * statement);
+static bool checkAssignment(SymbolTable * symbolTable, Tree * assignmentStatement);
+static int checkExpression(SymbolTable * symbolTable, Tree * expression);
+static void checkConditionIsBoolean (SymbolTable * symbolTable, Tree * condition);
+static void checkExpressionIsVariableType(SymbolTable * symbolTable, Tree * expression, Tree * variable, int variableType );
+static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool sideCalled, Tree * arrayType); // arrayType is optional and is used if whole array is expected
 
 // implementation
 
@@ -76,9 +79,6 @@ static void checkSubPrograms(SymbolTable * symbolTable, Tree * programLocations)
 			Tree * subProgram = (Tree *) iteratorGetNext(iterator);
 			int type = parseTreeGetType(subProgram);
 			bool isFunction = type == LL_FUNCTION;
-
-	
-	
 			if(isFunction)
 				checkFunction(symbolTable, subProgram);
 			else
@@ -125,90 +125,168 @@ static void checkFunction(SymbolTable * symbolTable, Tree * function) {
 	
 	addSubPrograms(symbolTable, subprogram_declarations);
 	checkSubPrograms(symbolTable, subprogram_declarations);
-	checkStatements(symbolTable, statement_list);
+	bool returnedType = checkStatements(symbolTable, statement_list);
+	if (!returnedType) { 
+		int lineDeclared = parseTreeGetLineNumberDeclared(function);
+		int lineIndexDeclared = parseTreeGetLineIndexDeclared(function);
+		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+		printf("[ERROR] FUNCTION \"%s\" defined at (%i,%i) does not always return a value. [TRACE: %s]\n", 
+			function_name, lineDeclared, lineIndexDeclared, trace);
+		exit(1);
+	}
 	symbolTablePopScope(symbolTable);
 }
 
-static void checkStatements(SymbolTable * symbolTable, Tree * statements){
+static bool checkStatements(SymbolTable * symbolTable, Tree * statements){
 	int numberOfStatements = 0;
+	bool statementReturned = false;
 	if(!parseTreeIsNull(statements)) {
 		Iterator * iterator = iteratorInit(treeGetChildren(statements));
 		while (iteratorHasNext(iterator)) {
 			Tree * statement = (Tree *) iteratorGetNext(iterator);
-			checkStatement(symbolTable, statement);
+			statementReturned = checkStatement(symbolTable, statement);
+			if (statementReturned && iteratorHasNext(iterator)) {
+				statement = iteratorGetNext(iterator);
+				int lineDeclared = parseTreeGetLineNumberDeclared(statement);
+				int lineIndexDeclared = parseTreeGetLineIndexDeclared(statement);
+				char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+				printf("[ERROR] DEAD CODE (%i,%i). [TRACE: %s]\n", 
+					lineDeclared, lineIndexDeclared, trace);
+				exit(1);
+			}
 			numberOfStatements++;
 		}
 		iteratorDestroy(iterator);
 	}
 	parseTreeSetLabel(statements, numberOfStatements);
+	return statementReturned;
 }
 
 
-static void checkStatement(SymbolTable * symbolTable, Tree * statement) {
+static bool checkStatement(SymbolTable * symbolTable, Tree * statement) {
 	int type = parseTreeGetType(statement);
-	int numberOfRegisters;
 
 	switch (type) {
 		case LL_ASSIGNOP:
 			;
-			Tree * variable = treeGetChild(statement, 0);
-			Tree * expression = treeGetChild(statement, 1);
-			checkVariableName(symbolTable, variable, LEFT_SIDE, 0);
-			if ( ! treeIsLeaf(variable) ) {
-				Tree * index = treeGetChild(variable, 0);
-				checkExpression(symbolTable, index);
-				numberOfRegisters = parseTreeGetLabel(index);
-				symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
-			}
-			checkExpression(symbolTable, expression);
-			numberOfRegisters = parseTreeGetLabel(expression);
-			symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
-			break;
+			return checkAssignment(symbolTable, statement);
 		case LL_ID: // procedure call
 			checkSubProgramName( symbolTable, statement, LL_PROCEDURE );
-			break;
+			return false;
 		case LL_IF:
 			parseTreeSetLabel(statement, symbolTableGetNumIf(symbolTable));
 			symbolTableIncrIf(symbolTable);
+
 			Tree * if_condition = treeGetChild(statement, 0);
-			checkExpression(symbolTable, if_condition);
-			numberOfRegisters = parseTreeGetLabel(if_condition);
-			symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
-			checkStatement(symbolTable, treeGetChild(statement, 1));
+			checkConditionIsBoolean(symbolTable, if_condition );
+			
+			bool firstStatement = checkStatement(symbolTable, treeGetChild(statement, 1));
+			bool secondStatement = false; 
 			if(treeGetSize(statement) == 3 )
-				checkStatement(symbolTable, treeGetChild(statement, 2));
-			break;
+				secondStatement = checkStatement(symbolTable, treeGetChild(statement, 2));
+			return firstStatement && secondStatement; 
 		case LL_WHILE:
 			parseTreeSetLabel(statement, symbolTableGetNumWhile(symbolTable));
 			symbolTableIncrWhile(symbolTable);
+			
 			Tree * while_condition = treeGetChild(statement, 0);
-			checkExpression(symbolTable, while_condition);
-			numberOfRegisters = parseTreeGetLabel(while_condition);
-			symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
+			checkConditionIsBoolean(symbolTable, while_condition );
+			
 			checkStatement(symbolTable, treeGetChild(statement, 1));
-			break;
+			return false;
 		case LL_FOR:
 			parseTreeSetLabel(statement, symbolTableGetNumFor(symbolTable));
 			symbolTableIncrFor(symbolTable);
+			
 			Tree * loopIterator = treeGetChild(statement, 0);
-			checkVariableName(symbolTable, loopIterator, LEFT_SIDE, 0);
+			int variableType = checkVariableName(symbolTable, loopIterator, RIGHT_SIDE, 0);
+			
 			Tree * expression1 = treeGetChild(statement, 1);
-			checkExpression(symbolTable, expression1);
-			numberOfRegisters = parseTreeGetLabel(expression1);
-			symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
-			Tree * expression2 = treeGetChild(statement, 2);
-			checkExpression(symbolTable, expression2);
-			numberOfRegisters = parseTreeGetLabel(expression2);
-			symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
-			checkStatement(symbolTable, treeGetChild(statement, 3));
-			break;
-		default:
-			checkStatements(symbolTable, statement);
-		break;
-	}
+			checkExpressionIsVariableType(symbolTable, expression1, loopIterator, variableType);
 
+			Tree * expression2 = treeGetChild(statement, 2);
+			checkExpressionIsVariableType(symbolTable, expression2, loopIterator, variableType);
+
+			return checkStatement(symbolTable, treeGetChild(statement, 3));
+		default:
+			;
+			return checkStatements(symbolTable, statement);
+	}
 }
 
+static void checkConditionIsBoolean (SymbolTable * symbolTable, Tree * condition) {
+	int expressionType = checkExpression(symbolTable, condition);
+	if (expressionType != LL_BOOLEAN) {
+		char * expressionTypeString = lexConstantToStringNoLL(expressionType);
+
+		int lineDeclared = parseTreeGetLineNumberDeclared(condition);
+		int lineIndexDeclared = parseTreeGetLineIndexDeclared(condition);
+		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+		printf("[ERROR] CONDITION is not of type BOOLEAN at (%i,%i). [TRACE: %s]\n", 
+			lineDeclared, lineIndexDeclared, trace);
+		exit(1);
+	}
+	int numberOfRegisters = parseTreeGetLabel(condition);
+	symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
+} 
+
+static void checkExpressionIsVariableType(SymbolTable * symbolTable, Tree * expression, Tree * variable, int variableType ) {
+	int expressionType = checkExpression(symbolTable, expression);
+	if (expressionType != variableType && expressionType != LL_NUM) {
+		char * variableName 		= parseTreeGetAttribute(variable);
+		char * variableTypeString 	= lexConstantToStringNoLL(variableType);
+		char * expressionTypeString = lexConstantToStringNoLL(expressionType);
+
+		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
+		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
+		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+		printf("[ERROR] ASSIGNMENT of variable \"%s\" of type \"%s\" does not match left hand side type of \"%s\" at (%i,%i). [TRACE: %s]\n", 
+			variableName, variableTypeString, expressionTypeString, lineDeclared, lineIndexDeclared, trace);
+		exit(1);
+	}
+	int numberOfRegisters = parseTreeGetLabel(expression);
+	symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
+}
+
+
+static bool checkAssignment(SymbolTable * symbolTable, Tree * assignmentStatement) {
+	Tree * variable = treeGetChild(assignmentStatement, 0);
+	Tree * expression = treeGetChild(assignmentStatement, 1);
+
+	int variableType = checkVariableName(symbolTable, variable, LEFT_SIDE, 0);
+	int numberOfRegisters = parseTreeGetLabel(variable);
+	symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
+
+	int expressionType = checkExpression(symbolTable, expression);
+	numberOfRegisters = parseTreeGetLabel(expression);
+	symbolTableUpdateTempRegs(symbolTable, numberOfRegisters);
+
+	char * variableName 		= parseTreeGetAttribute(variable);
+	if (expressionType != variableType && expressionType != LL_NUM) {
+		char * variableTypeString 	= lexConstantToStringNoLL(variableType);
+		char * expressionTypeString = lexConstantToStringNoLL(expressionType);
+
+		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
+		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
+		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+		printf("[ERROR] ASSIGNMENT of variable \"%s\" of type \"%s\" does not match left hand side type of \"%s\" at (%i,%i). [TRACE: %s]\n", 
+			variableName, variableTypeString, expressionTypeString, lineDeclared, lineIndexDeclared, trace);
+		exit(1);
+	}
+
+	SymbolTableScope * currentScope = symbolTablePeakScope(symbolTable);
+	Tree * scopeLocation = currentScope->scopeLocation;
+	bool isFunctionScope = parseTreeGetType(scopeLocation) == LL_FUNCTION;
+	char * scopeName = currentScope->name;
+
+	if (isFunctionScope && strcmp(variableName, scopeName) == 0) {
+		parseTreeSetLabel(assignmentStatement, 1);
+		return true;
+	} else {
+		parseTreeSetLabel(assignmentStatement, 0);
+		return false;
+	}
+}
 
 static void addVariables(SymbolTable * symbolTable, Tree * variableLocations) {
 	int numberOfVariables = 0;
@@ -309,21 +387,34 @@ static void addSubPrograms(SymbolTable * symbolTable, Tree * programLocations) {
 }
 
 
-static void checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, int type ) {
+static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, int type ) {
+	SymbolTableScope * currentScope = symbolTablePeakScope(symbolTable);
+	Tree * scopeLocation = currentScope->scopeLocation;
+	bool isFunctionScope = parseTreeGetType(scopeLocation) == LL_FUNCTION;
+
 	char * program_name = parseTreeGetAttribute(subProgram);
 	SearchResult searchResult;
+	VariableAttr attr; // declared only below
 
 	bool foundName = symbolTableSearchAll(symbolTable, program_name, &searchResult);
 	
 	if(!foundName) {
-		char * programTypeString = lexConstantToString(type);
-		programTypeString = stringTakeLast(programTypeString, 2); 
-		int lineDeclared = parseTreeGetLineNumberDeclared(subProgram);
-		int lineIndexDeclared = parseTreeGetLineIndexDeclared(subProgram);
-		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] %s \"%s\" was called at (%i,%i), but was never declared. [TRACE: %s]\n", 
-			programTypeString, program_name, lineDeclared, lineIndexDeclared, trace);
-		exit(1);
+		char * scopeName = currentScope->name; 
+
+		if( isFunctionScope && (strcmp(scopeName, program_name) == 0) ) {
+			attr.variableValue = scopeLocation;
+			attr.variableType  = scopeLocation;
+			searchResult.attributes = &attr; // declared here
+		} else {
+			char * programTypeString = lexConstantToString(type);
+			programTypeString = stringTakeLast(programTypeString, 2); 
+			int lineDeclared = parseTreeGetLineNumberDeclared(subProgram);
+			int lineIndexDeclared = parseTreeGetLineIndexDeclared(subProgram);
+			char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+			printf("[ERROR] %s \"%s\" was called at (%i,%i), but was never declared. [TRACE: %s]\n", 
+				programTypeString, program_name, lineDeclared, lineIndexDeclared, trace);
+			exit(1);
+		}
 	}
 
 
@@ -381,7 +472,7 @@ static void checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, i
 
 			iteratorDestroy(iterator);
 			parseTreeSetType(subProgram, actualType);
-			return; // no more checking for write procedure
+			return LL_PROCEDURE; // no more checking for read procedure
 		}
 
 		parseTreeSetType(subProgram, actualType);
@@ -467,8 +558,23 @@ static void checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, i
 
 					parseTreeSetLabel(argument, ARRAY_TYPE_ARGUMENT_LABEL);			// TODO: MIGHT HAVE TO CHANGE THIS
 				} else {
-					checkExpression(symbolTable, argument);
+					int argumentType = checkExpression(symbolTable, argument);
+					if (argumentType != currentParameterType && argumentType != LL_NUM) {
+						char * expectedTypeString = lexConstantToStringNoLL(currentParameterType);
+						char * actualTypeString = lexConstantToStringNoLL(argumentType);
+						int previousLineDeclared = parseTreeGetLineNumberDeclared(variableValue);
+						int previousLineIndexDeclared = parseTreeGetLineIndexDeclared(variableValue);
+						int lineDeclared = parseTreeGetLineNumberDeclared(argument);
+						int lineIndexDeclared = parseTreeGetLineIndexDeclared(argument);
+						char * actualProgramTypeString = lexConstantToString(actualType);
+						actualProgramTypeString = stringTakeLast(actualProgramTypeString, 2);
+						char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+						printf("[ERROR] %s \"%s\" defined at (%i,%i) was called having argument %i being of type %s when it is expected to have type %s at (%i,%i). [TRACE: %s]\n", 
+						actualProgramTypeString, program_name, previousLineDeclared, previousLineIndexDeclared, currentArgumentIndex, actualTypeString, expectedTypeString, lineDeclared, lineIndexDeclared, trace);
+						exit(1);
+					}
 				}
+
 				int label = parseTreeGetLabel(argument);
 				if (type == LL_FUNCTION) {
 					int functionLabel = parseTreeGetLabel(subProgram);
@@ -482,6 +588,7 @@ static void checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, i
 			iteratorDestroy(parameterValueIterator); 
 			iteratorDestroy(parameterTypeIterator);
 			iteratorDestroy(argumentIterator);
+
 		} else {
 
 			Iterator * argumentIterator = iteratorInit(treeGetChildren(expressionList));
@@ -493,6 +600,7 @@ static void checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, i
 				symbolTableUpdateTempRegs(symbolTable, label);
 			}
 			iteratorDestroy(argumentIterator);
+
 		}
 	} else {  // no arguments are present
 		Tree * variableValue = searchResult.attributes->variableValue; 
@@ -514,16 +622,41 @@ static void checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, i
 			parseTreeSetLabel(subProgram, FUNCTION_WITH_NO_PARAMETERS);			// TODO: MIGHT HAVE TO CHANGE THIS
 	}
 
+
+	if (type == LL_FUNCTION) {
+		Tree * variableValue = searchResult.attributes->variableValue; 
+		Tree * returnTypeLocation = treeGetChild(variableValue, 1);
+		int returnType = parseTreeGetType(returnTypeLocation);
+		return returnType;
+	} else {
+		return LL_PROCEDURE;
+	}
+
 }
 
 
-static void checkExpression(SymbolTable * symbolTable, Tree * expression) {
+static int checkExpression(SymbolTable * symbolTable, Tree * expression) {
 	int expressionType = parseTreeGetType(expression);
+
 	if (expressionType == LL_ID) {
+		SymbolTableScope * currentScope = symbolTablePeakScope(symbolTable);
+		Tree * scopeLocation = currentScope->scopeLocation;
+		bool isFunctionScope = parseTreeGetType(scopeLocation) == LL_FUNCTION;
 		SearchResult searchResult;
 		char * variableName = parseTreeGetAttribute(expression);
 		bool foundResult = symbolTableSearchAll(symbolTable, variableName, &searchResult);
-		if(!foundResult) {
+
+		VariableAttr attr;
+
+		if (!foundResult && isFunctionScope && strcmp(currentScope->name, variableName) == 0) {
+			attr.variableValue = scopeLocation;
+			attr.variableType = scopeLocation;
+			searchResult.attributes = &attr;
+			foundResult = true;
+		}
+
+
+		if(!foundResult) { // dummy code set up for error message
 			if ( treeIsLeaf (expression) ) {
 				checkVariableName(symbolTable, expression, RIGHT_SIDE, 0);
 			} else{
@@ -537,35 +670,100 @@ static void checkExpression(SymbolTable * symbolTable, Tree * expression) {
 		} else {
 			Tree * actualTypeLocation = searchResult.attributes->variableValue;
 			int actualType = parseTreeGetType(actualTypeLocation);
+
 			if(actualType != LL_ID) {
-				checkSubProgramName(symbolTable, expression, LL_FUNCTION);
+				int returnType = checkSubProgramName(symbolTable, expression, LL_FUNCTION);
+				return returnType;
 			} else {
-				checkVariableName(symbolTable, expression, RIGHT_SIDE, 0);
-				if ( ! treeIsLeaf(expression) ) {
-					Tree * index = treeGetChild(expression, 0);
-					checkExpression(symbolTable, index);
-					int indexLabel = parseTreeGetLabel(index);
-					parseTreeSetLabel(expression, indexLabel);
-				} else {
-					parseTreeSetLabel(expression, SINGLE_NODE_EXPRESSION);
-				}
+				int variableType = checkVariableName(symbolTable, expression, RIGHT_SIDE, 0);
+				return variableType;
 			}
 		}
 	} else if (expressionType == LL_NUM) {
 		parseTreeSetLabel(expression, SINGLE_NODE_EXPRESSION);
-	}else{
+		return LL_NUM;
+	} else {
 
 		int childrenSize = treeGetSize(expression);
+		char * expressionOperatorString = parseTreeGetAttribute(expression);
 		if(childrenSize == 1) {
 			Tree * onlyChild = treeGetChild(expression, 0);
-			checkExpression(symbolTable, onlyChild);
+			int valueType = checkExpression(symbolTable, onlyChild);
+
+			// type checking
+			if (strcmp(expressionOperatorString, "not") == 0 && valueType != LL_BOOLEAN) {
+				char * typeString = lexConstantToStringNoLL(valueType);
+
+				int lineDeclared = parseTreeGetLineNumberDeclared(expression);
+				int lineIndexDeclared = parseTreeGetLineIndexDeclared(expression);
+				char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+				printf("[ERROR] OPERATOR \"NOT\" is not defined with operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
+					 typeString, lineDeclared, lineIndexDeclared, trace);
+				exit(1);
+			}
+
+			// labeling
 			int childLabel = parseTreeGetLabel(onlyChild);
 			parseTreeSetLabel(expression, childLabel);
+			return valueType;
 		} else {
 			Tree * leftChild = treeGetChild(expression, 0);
 			Tree * rightChild = treeGetChild(expression, 1);
-			checkExpression(symbolTable, leftChild);
-			checkExpression(symbolTable, rightChild);
+			
+			int leftChildType = checkExpression(symbolTable, leftChild);
+			int rightChildType = checkExpression(symbolTable, rightChild);
+
+			int totalType;
+			// type checking
+			if (strcmp(expressionOperatorString, "and") == 0 || strcmp(expressionOperatorString, "or") == 0) {
+				if(leftChildType != LL_BOOLEAN || rightChildType != LL_BOOLEAN) {
+					char * leftTypeString = lexConstantToStringNoLL(leftChildType); 
+					char * rightTypeString = lexConstantToStringNoLL(rightChildType);
+
+					int lineDeclared = parseTreeGetLineNumberDeclared(expression);
+					int lineIndexDeclared = parseTreeGetLineIndexDeclared(expression);
+					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+					printf("[ERROR] OPERATOR \"%s\" is not defined with having a left side operand of type \"%s\" and a right side operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
+						 expressionOperatorString, leftTypeString, rightTypeString, lineDeclared, lineIndexDeclared, trace);
+					exit(1);
+				}
+				totalType = LL_BOOLEAN;
+			} else {
+				if (leftChildType == LL_BOOLEAN || rightChildType == LL_BOOLEAN) {
+					char * leftTypeString = lexConstantToStringNoLL(leftChildType); 
+					char * rightTypeString = lexConstantToStringNoLL(rightChildType);
+
+					int lineDeclared = parseTreeGetLineNumberDeclared(expression);
+					int lineIndexDeclared = parseTreeGetLineIndexDeclared(expression);
+					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+					printf("[ERROR] OPERATOR \"%s\" is not defined with having a left side operand of type \"%s\" and a right side operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
+						 expressionOperatorString, leftTypeString, rightTypeString, lineDeclared, lineIndexDeclared, trace);
+					exit(1);
+				}
+				if ( leftChildType == LL_NUM ) {
+					totalType = rightChildType;
+				} else if (rightChildType == LL_NUM) {
+					totalType = leftChildType;
+				} else {
+					if (leftChildType != rightChildType) {
+						char * leftTypeString = lexConstantToStringNoLL(leftChildType); 
+						char * rightTypeString = lexConstantToStringNoLL(rightChildType);
+
+						int lineDeclared = parseTreeGetLineNumberDeclared(expression);
+						int lineIndexDeclared = parseTreeGetLineIndexDeclared(expression);
+						char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+						printf("[ERROR] OPERATOR \"%s\" is not defined with having a left side operand of type \"%s\" and a right side operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
+							 expressionOperatorString, leftTypeString, rightTypeString, lineDeclared, lineIndexDeclared, trace);
+						exit(1);
+					}
+					totalType = leftChildType;
+				}
+				int expressionType = parseTreeGetType(expression);
+				if (expressionType == LL_RELOP)
+					totalType = LL_BOOLEAN;
+			}
+
+			// labeling
 			int leftChildLabel = parseTreeGetLabel(leftChild);
 			int rightChildLabel = parseTreeGetLabel(rightChild);
 			if (leftChildLabel == 0) {
@@ -581,20 +779,57 @@ static void checkExpression(SymbolTable * symbolTable, Tree * expression) {
 			} else {
 				parseTreeSetLabel(expression, leftChildLabel + 1);
 			}
+			return totalType;
 		}
-
 	}
+	return -1;
 }
 
 
-// put in variable only
-static void checkVariableName(SymbolTable * symbolTable, Tree * variable, bool sideCalled, Tree * arrayType) {
+// expected variable name here 
+static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool sideCalled, Tree * arrayType) {
+	SymbolTableScope * currentScope = symbolTablePeakScope(symbolTable);
+	Tree * scopeLocation = currentScope->scopeLocation;
+	bool isFunctionScope = parseTreeGetType(scopeLocation) == LL_FUNCTION;
+
+
 	char * variable_name = parseTreeGetAttribute(variable);
 	SearchResult searchResult;
 
 	bool foundName = symbolTableSearchAll(symbolTable, variable_name, &searchResult);
 
 	if(!foundName) {
+		if( sideCalled == LEFT_SIDE ) {
+
+			if (strcmp(currentScope->name, variable_name) == 0) {
+				if ( !isFunctionScope ) {
+					int previousLineDeclared = parseTreeGetLineNumberDeclared(scopeLocation);
+					int previousLineIndexDeclared = parseTreeGetLineIndexDeclared(scopeLocation);
+					int lineDeclared = parseTreeGetLineNumberDeclared(variable);
+					int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
+					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+					printf("[ERROR] PROCEDURE \"%s\" defined at (%i,%i) it attempting to RETURN a value at (%i,%i). [TRACE: %s]\n", 
+						variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
+					exit(1);
+				}
+
+				if(!treeIsLeaf(variable)) {
+					int previousLineDeclared = parseTreeGetLineNumberDeclared(scopeLocation);
+					int previousLineIndexDeclared = parseTreeGetLineIndexDeclared(scopeLocation);
+					int lineDeclared = parseTreeGetLineNumberDeclared(variable);
+					int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
+					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+					printf("[ERROR] FUNCTION \"%s\" defined at (%i,%i) has its RETURN VARIABLE indexed as a ARRAY at (%i,%i). [TRACE: %s]\n", 
+						variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
+					exit(1);
+				}
+				Tree * returnTypeLocation = treeGetChild(scopeLocation, 1);
+				int returnType = parseTreeGetType(returnTypeLocation);
+
+				return returnType; // it is fine
+			}
+		}
+
 		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
@@ -606,44 +841,6 @@ static void checkVariableName(SymbolTable * symbolTable, Tree * variable, bool s
 	int actualType = parseTreeGetType(searchResult.attributes->variableValue);
 
 	if( actualType != LL_ID ) { // checks if function or procedure
-		
-		if( sideCalled == LEFT_SIDE && actualType == LL_FUNCTION ) { // checks if a return variable for a function
-			SearchResult secondSearchResult;
-
-			bool foundName = symbolTableSearchScope(symbolTable, variable_name, &secondSearchResult);
-			if(!foundName){
-				Iterator * functionNameIterator = iteratorInit(symbolTable);
-
-				int currentScopeIndex = symbolTableGetScopeDepth(symbolTable);
-				SymbolTableScope * currentScope = symbolTablePeakScope(symbolTable);
-				bool foundFunction = false;
-				while (iteratorHasNext(functionNameIterator) && currentScopeIndex > 2) {
-					SymbolTableScope * currentScope = iteratorGetNext(functionNameIterator);
-					int scopeType = parseTreeGetType(currentScope->scopeLocation);
-					if(strcmp(currentScope->name, variable_name) == 0 && scopeType == LL_FUNCTION){
-						foundFunction = true;
-						break;
-					}
-					currentScopeIndex--;
-				}
-				iteratorDestroy(functionNameIterator);
-
-				if(foundFunction) {
-					if(!treeIsLeaf(variable)) {
-						Tree * variableValue = searchResult.attributes->variableValue;
-						int previousLineDeclared = parseTreeGetLineNumberDeclared(currentScope->scopeLocation);
-						int previousLineIndexDeclared = parseTreeGetLineIndexDeclared(currentScope->scopeLocation);
-						int lineDeclared = parseTreeGetLineNumberDeclared(variable);
-						int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
-						char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-						printf("[ERROR] FUNCTION \"%s\" defined at (%i,%i) has its RETURN VARIABLE indexed as a ARRAY at (%i,%i). [TRACE: %s]\n", 
-							variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
-						exit(1);
-					}
-					return; // it is fine
-				}
-			}
-		}
 		Tree * variableValue = searchResult.attributes->variableValue;
 		int previousLineDeclared = parseTreeGetLineNumberDeclared(variableValue);
 		int previousLineIndexDeclared = parseTreeGetLineIndexDeclared(variableValue);
@@ -659,6 +856,19 @@ static void checkVariableName(SymbolTable * symbolTable, Tree * variable, bool s
 
 	Tree * actualTypeLocation = searchResult.attributes->variableType;
 	int type = parseTreeGetType(actualTypeLocation);
+	
+	if (type != LL_ARRAY && arrayType) { // type is not a array but it is being checked as a array
+		Tree * variableValue = searchResult.attributes->variableValue;
+		int previousLineDeclared = parseTreeGetLineNumberDeclared(arrayType);
+		int previousLineIndexDeclared = parseTreeGetLineIndexDeclared(arrayType);
+		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
+		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
+		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+		printf("[ERROR] NON-ARRAY VARIABLE \"%s\" declared at (%i,%i) is being called where an array should be present at (%i,%i). [TRACE: %s]\n", 
+			variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
+		exit(1);
+	}
+
 	if(type != LL_ARRAY && ! treeIsLeaf(variable) ) { // indexing an array that is not a array
 		Tree * variableValue = searchResult.attributes->variableValue;
 		int previousLineDeclared = parseTreeGetLineNumberDeclared(variableValue);
@@ -669,7 +879,7 @@ static void checkVariableName(SymbolTable * symbolTable, Tree * variable, bool s
 		printf("[ERROR] NON-ARRAY VARIABLE \"%s\" defined at (%i,%i) was referenced as a ARRAY at (%i,%i). [TRACE: %s]\n", 
 			variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
 		exit(1);
-	} else if ( (type == LL_ARRAY && treeIsLeaf(variable)) ) { // type is an array, but the whole array is called
+	} else if ( type == LL_ARRAY && treeIsLeaf(variable) ) { // type is an array, but the whole array is called
 		if( ! arrayType ) {     // not search for whole array 
 			Tree * variableValue = searchResult.attributes->variableValue;
 			int previousLineDeclared = parseTreeGetLineNumberDeclared(variableValue);
@@ -681,6 +891,24 @@ static void checkVariableName(SymbolTable * symbolTable, Tree * variable, bool s
 				variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
 			exit(1);
 		} else {
+			Tree * actualTypeTypeLocation = searchResult.attributes->variableType;
+			Tree * arrayTypeType = treeGetChild(actualTypeTypeLocation, 2);
+			int actualTypeType = parseTreeGetType(arrayTypeType);
+			Tree * expectedArrayType = treeGetChild(arrayType, 2);
+			int expectedArrayTypeValue = parseTreeGetType(expectedArrayType);
+			if (expectedArrayTypeValue != actualTypeType) {
+				char * expectedTypeString = lexConstantToStringNoLL(expectedArrayTypeValue);
+				char * actualTypeString   = lexConstantToStringNoLL(actualTypeType);
+				int previousLineDeclared = parseTreeGetLineNumberDeclared(arrayType);
+				int previousLineIndexDeclared = parseTreeGetLineIndexDeclared(arrayType);
+				int lineDeclared = parseTreeGetLineNumberDeclared(variable);
+				int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
+				char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+				printf("[ERROR] At (%i,%i), ARRAY \"%s\" of type \"%s\" does not match the expected ARRAY type \"%s\" at (%i,%i). [TRACE: %s]\n", 
+					lineDeclared, lineIndexDeclared, variable_name, actualTypeString, expectedTypeString, previousLineDeclared, previousLineIndexDeclared, trace);
+				exit(1);
+			}
+
 			Tree * actualVariableType = searchResult.attributes->variableType;
 			Tree * actualLowerBoundLocation = treeGetChild(actualVariableType, 0);
 			Tree * actualUpperBoundLocation = treeGetChild(actualVariableType, 1);
@@ -692,27 +920,44 @@ static void checkVariableName(SymbolTable * symbolTable, Tree * variable, bool s
 			int upperBound = parseTreeGetLabel(upperBoundLocation);
 			int lowerBound = parseTreeGetLabel(lowerBoundLocation);
 			if(actualUpperBound != upperBound || actualLowerBound != lowerBound ) {
-				Tree * variableValue = searchResult.attributes->variableValue;
 				int previousLineDeclared = parseTreeGetLineNumberDeclared(arrayType);
 				int previousLineIndexDeclared = parseTreeGetLineIndexDeclared(arrayType);
 				int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 				int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 				char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-				printf("[ERROR] At (%i,%i), ARRAY BOUNDS of \"%s\" (%i to %i) does not match the declared array bounds (%i to %i) at (%i,%i). [TRACE: %s]\n", 
+				printf("[ERROR] At (%i,%i), ARRAY BOUNDS of \"%s\" (%i to %i) does not match the expected ARRAY BOUNDS (%i to %i) at (%i,%i). [TRACE: %s]\n", 
 					lineDeclared, lineIndexDeclared, variable_name, actualLowerBound, actualUpperBound, lowerBound, upperBound, previousLineDeclared, previousLineIndexDeclared, trace);
 				exit(1);
 			}
+			parseTreeSetLabel(variable, SINGLE_NODE_EXPRESSION);
+			return LL_ARRAY;
 		}
 
-	}	else if (type != LL_ARRAY && arrayType) { // type is not a array but it is being checked as a array
-		Tree * variableValue = searchResult.attributes->variableValue;
-		int previousLineDeclared = parseTreeGetLineNumberDeclared(arrayType);
-		int previousLineIndexDeclared = parseTreeGetLineIndexDeclared(arrayType);
-		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
-		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
-		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] NON-ARRAY VARIABLE \"%s\" declared at (%i,%i) is being called where an array should be present at (%i,%i). [TRACE: %s]\n", 
-			variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
-		exit(1);
+	} else if (type == LL_ARRAY && ! treeIsLeaf(variable)) {  // type is an array and is being indexed
+		Tree * index = treeGetChild(variable, 0);
+		int indexType = checkExpression(symbolTable, index);
+		if (indexType != LL_INTEGER && indexType != LL_NUM) {
+			Tree * variableValue = searchResult.attributes->variableValue;
+			char * indexTypeString = lexConstantToStringNoLL(indexType);
+			int previousLineDeclared = parseTreeGetLineNumberDeclared(variableValue);
+			int previousLineIndexDeclared = parseTreeGetLineIndexDeclared(variableValue);
+			int lineDeclared = parseTreeGetLineNumberDeclared(index);
+			int lineIndexDeclared = parseTreeGetLineIndexDeclared(index);
+			char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
+			printf("[ERROR] VARIABLE ARRAY \"%s\" declared at (%i,%i) was indexed with a NON-INTEGER value (%s) at (%i,%i). [TRACE: %s]\n", 
+				 variable_name, previousLineDeclared, previousLineIndexDeclared, indexTypeString, lineDeclared, lineIndexDeclared, trace);
+			exit(1);
+		}
+		int indexLabel = parseTreeGetLabel(index);
+		parseTreeSetLabel(variable, indexLabel);
+
+		Tree * actualTypeTypeLocation = searchResult.attributes->variableType;
+		Tree * arrayTypeType = treeGetChild(actualTypeTypeLocation, 2);
+		int actualTypeType = parseTreeGetType(arrayTypeType);
+		return actualTypeType;
+
 	}
+	parseTreeSetLabel(variable, SINGLE_NODE_EXPRESSION);
+	int variableType = parseTreeGetType(actualTypeLocation);
+	return variableType;
 }

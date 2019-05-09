@@ -30,6 +30,7 @@ void lexError(char * stringValue) {
 
 char * lexConstantToString(int value) {
 	switch(value) {
+		case LL_BOOLEAN: return copyString("L_BOOLEAN");
 		case LL_PROGRAM: return copyString("L_PROGRAM");
 		case LL_FUNCTION: return copyString("L_FUNCTION");
 		case LL_PROCEDURE: return copyString("L_PROCEDURE");
@@ -68,4 +69,11 @@ char * lexConstantToString(int value) {
 		default:
 		return copyString("");
 	}
+}
+
+char * lexConstantToStringNoLL(int value) {
+	char * temp = lexConstantToString(value);
+	char * noLL = stringTakeLast(temp, 2);
+	free(temp);
+	return noLL;
 }

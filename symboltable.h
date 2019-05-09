@@ -8,8 +8,8 @@
 
 #define SymbolTable LinkedList
 
-#define READ_PROCEDURE_ID -1
-#define WRITE_PROCEDURE_ID -2
+#define READ_PROCEDURE_ID -2
+#define WRITE_PROCEDURE_ID -3
 
 typedef struct SymbolTableScope {
 	char* name;
@@ -60,6 +60,7 @@ int symbolTablegetNumTempRegs(SymbolTable * symbolTable);
 
 
 char* symbolTableScopeTraceString(SymbolTable * symbolTable, ListPrintProperties * listPrintProperties);
+char* symbolTableScopeTraceStringAtDepth(SymbolTable * symbolTable, int depth, ListPrintProperties * listPrintProperties);
 int  symbolTableGetScopeDepth(SymbolTable * symbolTable);
 void symbolTablePrint(SymbolTable * symbolTable);
 char* symbolTableToString(SymbolTable * symbolTable);

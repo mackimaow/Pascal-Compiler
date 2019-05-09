@@ -86,6 +86,8 @@ int main(int argc, char *argv[]){
   	char * code = generateCode(tree, symbolTable);
   	printf("\n\nEND CODE GENERATION\n\n");
 
+  	printf("\n\nCLEAN TREE (WITH RE-LABELING):\n\n");
+  	treePrint(tree);
 
   	if (outputAssemblyFile) {
   		fprintf (outputAssemblyFile, "%s\n", code);

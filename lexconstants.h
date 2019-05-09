@@ -6,6 +6,8 @@
 extern int lineNumber;
 extern int lineIndex;
 
+#define LL_BOOLEAN 257
+
 #define LL_PROGRAM 258
 #define LL_FUNCTION 259
 #define LL_PROCEDURE 260
@@ -43,6 +45,7 @@ extern int lineIndex;
 #define LL_C 292
 
 char * lexConstantToString(int value);
+char * lexConstantToStringNoLL(int value);
 void processLexString(char * stringValue);
 void lexError(char * stringValue);
 

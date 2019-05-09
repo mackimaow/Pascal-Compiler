@@ -37,70 +37,77 @@ static char * footer =
 "\n";
 
 static char * writeCommandString = 
-"\n"
-"_write:\n"
-"\n"
-"	push ebp\n"
-"	mov ebp, esp\n"
-"\n"
-"	mov eax, [ebp+8]		; grab the first argument\n"
-"	push eax 				; stores the entire value to use  (-4)\n"
-"\n"
-"	cmp eax, -1\n"
-"	jg  _write_store_digits\n"
-"	mov edx, 0\n"
-"	mov ecx, -1				; \n"
-"	mul ecx					; negate value\n"
-"	mov [ebp-4], eax		; place back into register			\n"
-"\n"
-"	push '-'\n"
-"	mov ecx, esp\n"
-"	mov eax, 4              ; SYS_WRITE\n"
-"    mov edx, 1              ; Amount of chars to print\n"
-"    mov ebx, 1              ; STDOUT\n"
-"    int 0x80\n"
-"\n"
-"    pop eax\n"
-"\n"
-"_write_store_digits:\n"
-"\n"
-"	mov edx, 0\n"
-"	mov eax, [ebp-4]		; set up number to divide\n"
-"	mov ebx, 10				; set up divider\n"
-"	div ebx					; eax = eax / ebx    edx = eax mod ebx \n"
-"	add edx, '0'\n"
+"_write: \n"
+"	push ebp \n"
+"	mov ebp, esp \n"
+" \n"
+"	mov eax, [ebp+8]		; grab the first argument \n"
+"	push eax 				; stores the entire value to use  (-4) \n"
+" \n"
+"	cmp eax, -1 \n"
+"	jg  _write_store_digits \n"
+"	mov edx, 0 \n"
+"	mov ecx, -1				;  \n"
+"	mul ecx					; negate value \n"
+"	mov [ebp-4], eax		; place back into register			 \n"
+" \n"
+"	push '-' \n"
+" \n"
+"	mov ecx, esp \n"
+"	mov eax, 4              ; SYS_WRITE \n"
+"    mov edx, 1              ; Amount of chars to print \n"
+"    mov ebx, 1              ; STDOUT \n"
+"    int 0x80 \n"
+" \n"
+"    pop eax \n"
+" \n"
+"_write_store_digits: \n"
+" \n"
+"	mov edx, 0 \n"
+"	mov eax, [ebp-4]		; set up number to divide \n"
+"	mov ebx, 10				; set up divider \n"
+"	div ebx					; eax = eax / ebx    edx = eax mod ebx  \n"
+"	add edx, '0' \n"
 "	mov [ebp-4], eax		; \n"
-"	push edx				;\n"
-"\n"
-"    cmp eax, 0 \n"
-"jne _write_store_digits\n"
-"\n"
-"_write_digits:\n"
-"    mov ecx, esp\n"
-"	mov eax, 4              ; SYS_WRITE\n"
-"    mov edx, 1              ; Amount of chars to print\n"
-"    mov ebx, 1              ; STDOUT\n"
-"    int 0x80\n"
-"\n"
-"    pop eax\n"
-"    mov eax, ebp\n"
-"    mov ecx, -4\n"
-"    sub eax, ecx \n"
-"    cmp eax, esp\n"
-"jne _write_digits\n"
-"\n"
-"    mov eax, 0xa\n"
+"	push edx				; \n"
+" \n"
+"    cmp eax, 0  \n"
+"jne _write_store_digits \n"
+" \n"
+"_write_digits: \n"
+"    mov ecx, esp \n"
+"	mov eax, 4              ; SYS_WRITE \n"
+"    mov edx, 1              ; Amount of chars to print \n"
+"    mov ebx, 1              ; STDOUT \n"
+"    int 0x80 \n"
+" \n"
+"    pop eax \n"
+"    mov eax, ebp \n"
+"    cmp eax, esp \n"
+"jne _write_digits \n"
+" \n"
+"    mov eax, 0xa \n"
 "    push eax \n"
-"    mov ecx, esp\n"
-"	mov eax, 4              ; SYS_WRITE\n"
-"    mov edx, 1              ; Amount of chars to print\n"
-"    mov ebx, 1              ; STDOUT\n"
-"    int 0x80\n"
-"\n"
-"	mov esp, ebp\n"
-"	pop ebp\n"
-"	ret\n"
-"\n";
+"    mov ecx, esp \n"
+"	mov eax, 4              ; SYS_WRITE \n"
+"    mov edx, 1              ; Amount of chars to print \n"
+"    mov ebx, 1              ; STDOUT \n"
+"    int 0x80 \n"
+"    pop eax \n"
+" \n"
+"    mov eax, 0xd \n"
+"    push eax \n"
+"    mov ecx, esp \n"
+"	mov eax, 4              ; SYS_WRITE \n"
+"    mov edx, 1              ; Amount of chars to print \n"
+"    mov ebx, 1              ; STDOUT \n"
+"    int 0x80 \n"
+"    pop eax \n"
+" \n"
+"	mov esp, ebp \n"
+"	pop ebp \n"
+"	ret \n";
+
 
 static char * comparingOperators =
 "\n\n"
@@ -140,7 +147,7 @@ static char * comparingOperators =
 "_not_equal:\n"
 "	mov eax, -1\n"
 "	cmp ebx, ecx  \n"
-"	jle _not_equal_jump\n"
+"	jne _not_equal_jump\n"
 "	mov eax, 0\n"
 "_not_equal_jump:\n"
 "	ret\n"
@@ -158,27 +165,37 @@ static char * comparingOperators =
 static char * array_out_of_bounds = 
 "\n"
 "\nsection	.data\n"
-"\nmsg db '[ERROR] ARRAY OUT OF BOUNDS!', 0xa  \n"
-"\nlen equ $ - msg     \n";
+"\n	msg db '[ERROR] ARRAY OUT OF BOUNDS!', 0xa  \n"
+"\n	len equ $ - msg     \n";
 
 static char * errorFunction =
 "\n"
 "_error:	            ;tells linker entry point\n"
+"	push eax 		\n"
 "	push edx 		\n"
+"	 				\n"
+"	mov	edx,len     ;message length\n"
+"	mov	ecx,msg     ;message to write\n"
+"	mov	ebx,1       ;file descriptor (stdout)\n"
+"	mov	eax,4       ;system call number (sys_write)\n"
+"	int	0x80        ;call kernel\n"
+"	 				\n"
 "	call _write 	\n"
 "	pop edx 		\n"
-"	push eax 		\n"
 "	call _write 	\n"
 "	 				\n"
-"   mov	edx,len     ;message length\n"
-"   mov	ecx,msg     ;message to write\n"
-"   mov	ebx,1       ;file descriptor (stdout)\n"
-"   mov	eax,4       ;system call number (sys_write)\n"
-"   int	0x80        ;call kernel\n"
-"	 				\n"
-"   mov	eax,1       ;system call number (sys_exit)\n"
-"   mov	ebx,1       ; error 				\n"
-"   int	0x80        ;call kernel\n";
+"	mov	eax,1       ;system call number (sys_exit)\n"
+"	mov	ebx,1       ; error 				\n"
+"	int	0x80        ;call kernel\n";
+
+// static char * writePreMadeMessageString =
+// "\n"
+// "_write_msg:	    ;tells linker entry point\n"
+// "   mov	ebx,1       ;file descriptor (stdout)\n"
+// "   mov	eax,4       ;system call number (sys_write)\n"
+// "   int	0x80        ;call kernel\n"
+
+
 
 
 static ListPrintProperties codePrint = {"", "", ""};
@@ -192,7 +209,7 @@ static int safePop(LinkedList * tempStack);
 static void safePush(LinkedList * tempStack, int value);
 static int safePeak(LinkedList * tempStack);
 static void appendRegBPString(CodeGenerator * codeGenerator, int indexFromBP);
-
+// static void writePreMadeMessage();
 
 static int labelVariables(Tree * variableList, bool areParameters);
 
@@ -205,15 +222,16 @@ static void genCodeStatement(SymbolTable * symbolTable, CodeGenerator * codeGene
 static void genCodeTwoNodeOperation(CodeGenerator * codeGenerator, char * operator);
 
 static LinkedList * generateFullHeader(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * declarations, int lastRegisterUnsed);
+static void generateLocalVariables(CodeGenerator * codeGenerator, Tree * declarations);
 
 static void getCallingVariablePutInEAX(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * variable);
 static void callFunctionPutInEAX(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * functionCall, LinkedList * tempStack );
-static void callProcedure(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * procedureCall );
+static void callProcedure(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * procedureCall, LinkedList * tempStack);
 static void callWriteProcedure(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * procedureCall );
-static void assignFromEAXToVariable(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * variable, LinkedList * tempStack);
+static void assignFromEAXToVariable(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * variable, LinkedList * tempStack, bool isReturnType);
 static void genCodeIndexVariableAtEAX(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * variable);
 static bool genCodeExpressionToEAX(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * expression, LinkedList * tempStack);
-
+static int genCodePushArrayVariable(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * arrayType, Tree * variable);
 
 char * generateCode(Tree * tree, SymbolTable * symbolTable) {
 	CodeGenerator * codeGenerator = linkedListInitWithPrintProperties(&STRING_OBJECT, &codePrint);
@@ -222,18 +240,28 @@ char * generateCode(Tree * tree, SymbolTable * symbolTable) {
 	char * callLabel = symbolTableScopeTraceString(symbolTable, &callPrint);
 	appendString(codeGenerator, "	call ");
 	appendString(codeGenerator, callLabel);
+	free(callLabel);
 	appendString(codeGenerator, programName);
 	appendString(codeGenerator, "\n");
 	appendString(codeGenerator, endString);
 	appendString(codeGenerator, writeCommandString);
 	appendString(codeGenerator, comparingOperators);
-
 	genCodeProgram(symbolTable, codeGenerator, tree);
+	appendString(codeGenerator, errorFunction);
+	prependString(codeGenerator, array_out_of_bounds);
+
 	char * code = linkedListToString(codeGenerator);
 
 	linkedListDestroy(codeGenerator);
 	return code;
 }
+
+
+// static void writePreMadeMessage(CodeGenerator * codeGenerator, char * string) {
+
+
+// }
+
 
 
 static LinkedList * generateFullHeader(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * declarations, int lastRegisterUnsed) {
@@ -242,12 +270,14 @@ static LinkedList * generateFullHeader(SymbolTable * symbolTable, CodeGenerator 
 	appendString(codeGenerator,callLabel);
 	appendString(codeGenerator, ":\n\n");
 	appendString(codeGenerator, header);
+	free(callLabel);
 
 	appendString(codeGenerator, "	push eax	; base pointer of parent \n");
 
-	for (int i = -8; i > lastRegisterUnsed; i-=4 ) {
-		appendString(codeGenerator, "	push 0		; variable register \n");
-	}
+	generateLocalVariables(codeGenerator, declarations);
+	// for (int i = -8; i > lastRegisterUnsed; i-=4 ) {
+	// 	appendString(codeGenerator, "	push 0		; variable register \n");
+	// }
 	int numberOfTempRegs = symbolTablegetNumTempRegs(symbolTable);
 	int lastLastRegisterUsed = lastRegisterUnsed - 4 * numberOfTempRegs;
 
@@ -259,6 +289,52 @@ static LinkedList * generateFullHeader(SymbolTable * symbolTable, CodeGenerator 
 	return tempStack;
 }
 
+static void generateLocalVariables(CodeGenerator * codeGenerator, Tree * declarations) {
+	Iterator * typeIterator = iteratorInit(treeGetChildren(declarations));
+	appendString(codeGenerator, "\n");
+	while(iteratorHasNext(typeIterator)) {
+		Tree * identifier_list = iteratorGetNext(typeIterator);
+		Tree * variable_type = iteratorGetNext(typeIterator);
+		int variableTypeValue = parseTreeGetType(variable_type);
+
+
+		if (variableTypeValue == LL_ARRAY) {
+			Tree * lowerBoundLocation = treeGetChild(variable_type, 0);
+			Tree * upperBoundLocation = treeGetChild(variable_type, 1);
+
+			int lowerBound = parseTreeGetLabel(lowerBoundLocation);
+			int upperBound = parseTreeGetLabel(upperBoundLocation);
+			char * lowerBoundString = intToString(lowerBound);
+			char * upperBoundString = intToString(upperBound);
+
+			Iterator * iterator = iteratorInit(treeGetChildren(identifier_list));
+			while (iteratorHasNext(iterator)) {
+				Tree * variable = iteratorGetNext(iterator);
+				appendString(codeGenerator, "	push ");
+				appendString(codeGenerator, lowerBoundString);
+				appendString(codeGenerator, "		; lower bound array\n");
+				appendString(codeGenerator, "	push ");
+				appendString(codeGenerator, upperBoundString);
+				appendString(codeGenerator, "		; upper bound array\n");
+				for(int i = lowerBound; i <= upperBound; i++)
+					appendString(codeGenerator, "	push 0		; declared array element \n");
+			}
+			free(lowerBoundString);
+			free(upperBoundString);
+			iteratorDestroy(iterator);
+		} else {
+			Iterator * iterator = iteratorInit(treeGetChildren(identifier_list));
+			while (iteratorHasNext(iterator)) {
+				iteratorGetNext(iterator);
+				appendString(codeGenerator, "	push 0		; declared variable\n");
+			}
+			iteratorDestroy(iterator);
+		}
+	}
+	appendString(codeGenerator, "\n");
+
+	iteratorDestroy(typeIterator);
+}
 
 static void genCodeProgram(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * program) {
 	char * program_name = parseTreeGetAttribute(program);
@@ -277,9 +353,6 @@ static void genCodeProgram(SymbolTable * symbolTable, CodeGenerator * codeGenera
 	genCodeStatements(symbolTable, codeGenerator, statement_list, tempStack);
 	appendString(codeGenerator, footer);
 
-	appendString(codeGenerator, errorFunction);
-	appendString(codeGenerator, array_out_of_bounds);
-
 	linkedListDestroy(tempStack);
 	symbolTablePopScope(symbolTable);
 }
@@ -288,7 +361,6 @@ static void genCodeSubPrograms(SymbolTable * symbolTable, CodeGenerator * codeGe
 	int listSize = parseTreeGetLabel(subPrograms);
 	if(listSize == 0)
 		return;
-
 	Iterator * iterator = iteratorInit(treeGetChildren(subPrograms));
 	while(iteratorHasNext(iterator)){
 		Tree * subProgram = (Tree *) iteratorGetNext(iterator);
@@ -298,6 +370,7 @@ static void genCodeSubPrograms(SymbolTable * symbolTable, CodeGenerator * codeGe
 				genCodeFunction(symbolTable, codeGenerator, subProgram);
 			else
 				genCodeProcedure(symbolTable, codeGenerator, subProgram);
+
 	}
 	iteratorDestroy(iterator);
 }
@@ -317,7 +390,6 @@ static void genCodeProcedure(SymbolTable * symbolTable, CodeGenerator * codeGene
 
 	// gen call here
 	LinkedList * tempStack = generateFullHeader(symbolTable, codeGenerator, declarations, lastRegisterUsed); 
-
 	genCodeStatements(symbolTable, codeGenerator, statement_list, tempStack);
 	appendString(codeGenerator, footer);
 
@@ -326,37 +398,42 @@ static void genCodeProcedure(SymbolTable * symbolTable, CodeGenerator * codeGene
 }
 
 static void genCodeFunction(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * function) {
+
 	char * function_name = parseTreeGetAttribute(function);
 	symbolTablePushScope(symbolTable, function_name);
-
 	Tree * parameters = treeGetChild(function, 0); // skip 
-	Tree * declarations = treeGetChild(function, 1);
-	Tree * subprogram_declarations = treeGetChild(function, 2);
-	Tree * statement_list = treeGetChild(function, 3);
+	Tree * declarations = treeGetChild(function, 2);
+	Tree * subprogram_declarations = treeGetChild(function, 3);
+	Tree * statement_list = treeGetChild(function, 4);
 
 	int returnLocation = labelVariables(parameters, true);
 	parseTreeSetLabel(function, returnLocation);
 	int lastRegisterUsed = labelVariables(declarations, false);
+
 	genCodeSubPrograms(symbolTable, codeGenerator, subprogram_declarations);
 
 	// gen call here
 	LinkedList * tempStack = generateFullHeader(symbolTable, codeGenerator, declarations, lastRegisterUsed); 
 	genCodeStatements(symbolTable, codeGenerator, statement_list, tempStack);
+	char * function_end = symbolTableScopeTraceString(symbolTable, &labelPrint);
+	appendString(codeGenerator, "\n");
+	appendString(codeGenerator, function_end);
+	appendString(codeGenerator, "end:\n");
 	appendString(codeGenerator, footer);
-
+	free(function_end);
 	linkedListDestroy(tempStack);
 	symbolTablePopScope(symbolTable);
 }
 
 static void genCodeStatements(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * statements, LinkedList * tempStack) {
 	int numberOfStatements = parseTreeGetLabel(statements);
+
 	if(numberOfStatements == 0)
 		return;
 	Iterator * iterator = iteratorInit(treeGetChildren(statements));
 	while (iteratorHasNext(iterator)) {
 		Tree * statement = (Tree *) iteratorGetNext(iterator);
 		genCodeStatement(symbolTable, codeGenerator, statement, tempStack);
-		numberOfStatements++;
 	}
 	iteratorDestroy(iterator);
 }
@@ -371,15 +448,34 @@ static void genCodeStatement(SymbolTable * symbolTable, CodeGenerator * codeGene
 			Tree * variable = treeGetChild(statement, 0);
 			Tree * expression = treeGetChild(statement, 1);
 			genCodeExpressionToEAX(symbolTable, codeGenerator, expression, tempStack);
-			assignFromEAXToVariable(symbolTable, codeGenerator, variable, tempStack);
+			int label = parseTreeGetLabel(statement);
+			assignFromEAXToVariable(symbolTable, codeGenerator, variable, tempStack, label == 1);
+			if (label == 1) { // return function
+				char * function_end = symbolTableScopeTraceString(symbolTable, &labelPrint);
+				appendString(codeGenerator, "\n	jmp ");
+				appendString(codeGenerator, function_end);
+				appendString(codeGenerator, "end\n");
+				free(function_end);
+			}
 			break;
-		case READ_PROCEDURE_ID: 
-			// checkSubProgramName( symbolTable, statement, LL_PROCEDURE );
-		case WRITE_PROCEDURE_ID: 
-			// checkSubProgramName( symbolTable, statement, LL_PROCEDURE );
-
+		case READ_PROCEDURE_ID:
+			break;
+		case WRITE_PROCEDURE_ID:
+			;
+			Tree * write_argumentList = treeGetChild(statement, 0);
+			Iterator * write_arguments_iterator = iteratorInit(treeGetChildren(write_argumentList));
+			appendString(codeGenerator, "\n	push 0\n");
+			while (iteratorHasNext(write_arguments_iterator)) {
+				Tree * arg = iteratorGetNext(write_arguments_iterator);
+				genCodeExpressionToEAX(symbolTable, codeGenerator, arg, tempStack);
+				appendString(codeGenerator, "\n	mov [esp],eax\n");
+				appendString(codeGenerator, "	call _write");
+			}
+			appendString(codeGenerator, "\n	pop eax\n");
+			iteratorDestroy(write_arguments_iterator);
+			break;
 		case LL_ID: // procedure call
-			// checkSubProgramName( symbolTable, statement, LL_PROCEDURE );
+			callProcedure(symbolTable, codeGenerator, statement, tempStack);
 			break;
 		case LL_IF:
 			;
@@ -395,6 +491,7 @@ static void genCodeStatement(SymbolTable * symbolTable, CodeGenerator * codeGene
 			appendString(codeGenerator, "else_");
 			appendString(codeGenerator, if_label_string);
 			appendString(codeGenerator, "\n");
+
 			genCodeStatement(symbolTable, codeGenerator,  treeGetChild(statement, 1), tempStack);
 			if (treeGetSize(statement) == 2) { // if then 
 				appendString(codeGenerator, "\n");
@@ -420,6 +517,7 @@ static void genCodeStatement(SymbolTable * symbolTable, CodeGenerator * codeGene
 				appendString(codeGenerator, if_label_string);
 				appendString(codeGenerator, ":\n");
 			}
+			free(if_label);
 			free(if_label_string);
 			break;
 		case LL_WHILE:
@@ -451,6 +549,8 @@ static void genCodeStatement(SymbolTable * symbolTable, CodeGenerator * codeGene
 			appendString(codeGenerator, "while_end_");
 			appendString(codeGenerator, while_label_string);
 			appendString(codeGenerator, ":\n");
+			free(while_label);
+			free(while_label_string);
 			break;
 		case LL_FOR:
 			;
@@ -461,17 +561,18 @@ static void genCodeStatement(SymbolTable * symbolTable, CodeGenerator * codeGene
 
 			char * for_label_string = intToString( parseTreeGetLabel(statement));
 			char * for_label = symbolTableScopeTraceString(symbolTable, &labelPrint);
-			genCodeExpressionToEAX(symbolTable, codeGenerator, treeGetChild(statement, 1), tempStack);
+			genCodeExpressionToEAX(symbolTable, codeGenerator, firstExpression, tempStack);
 			appendString(codeGenerator, "\n	push eax\n");
-			assignFromEAXToVariable(symbolTable, codeGenerator, iteratorVariable, tempStack);
-			genCodeExpressionToEAX(symbolTable, codeGenerator, treeGetChild(statement, 1), tempStack);
+			assignFromEAXToVariable(symbolTable, codeGenerator, iteratorVariable, tempStack, false);
+
+			genCodeExpressionToEAX(symbolTable, codeGenerator, secondExpression, tempStack);
 			appendString(codeGenerator, "\n	push eax\n");
 			appendString(codeGenerator, "\n	mov eax,1\n	mov ebx,[esp+4]\n	mov ecx,[esp]\n	cmp ebx,ecx\n	jle ");
 			appendString(codeGenerator, for_label);
 			appendString(codeGenerator, "for_incr_");
 			appendString(codeGenerator, for_label_string);
 			appendString(codeGenerator, "\n");
-			appendString(codeGenerator, "\n	mov eax, 1\n");
+			appendString(codeGenerator, "\n	mov eax,-1\n");
 			appendString(codeGenerator, "\n");
 			appendString(codeGenerator, for_label);
 			appendString(codeGenerator, "for_incr_");
@@ -492,7 +593,7 @@ static void genCodeStatement(SymbolTable * symbolTable, CodeGenerator * codeGene
 			appendString(codeGenerator, "\n");
 			
 			appendString(codeGenerator, "\n	mov ebx,[esp+4]\n 	add eax,ebx\n");
-			assignFromEAXToVariable(symbolTable, codeGenerator, iteratorVariable, tempStack);
+			assignFromEAXToVariable(symbolTable, codeGenerator, iteratorVariable, tempStack, false);
 
 			appendString(codeGenerator, "\n	jmp ");
 			appendString(codeGenerator, for_label);
@@ -506,6 +607,8 @@ static void genCodeStatement(SymbolTable * symbolTable, CodeGenerator * codeGene
 			appendString(codeGenerator, ":\n");
 			appendString(codeGenerator, "\n	pop eax\n");
 			appendString(codeGenerator, "\n	pop eax\n");
+			free(for_label);
+			free(for_label_string);
 			break;
 		default:
 			;
@@ -514,114 +617,271 @@ static void genCodeStatement(SymbolTable * symbolTable, CodeGenerator * codeGene
 	}
 }
 
-
-
 static void getCallingVariablePutInEAX(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * variable) {
 	char * variableName = parseTreeGetAttribute(variable);
 	SearchResult searchResult;
-	symbolTableSearchScope(symbolTable, variableName, &searchResult);
+	symbolTableSearchAll(symbolTable, variableName, &searchResult);
 	int i = searchResult.searchDepth;
-	char * trace = symbolTableScopeTraceString(symbolTable, &labelPrint);
-	
+
 	appendString(codeGenerator, "\n	mov ebx,ebp\n");
-	for(int j = 0; j < i; j++) {
-		appendString(codeGenerator, "\n	mov ecx,[ebp-4]\n	mov ebx,ecx\n");
-	}
+	for(int j = 0; j < i; j++)
+		appendString(codeGenerator, "\n	mov ecx,[ebx-4]\n	mov ebx,ecx\n");
 	Tree * variableType = searchResult.attributes->variableValue;
 	int variableOffset = parseTreeGetLabel(variableType);
 	appendString(codeGenerator, "\n	add ebx,");
-	appendString(codeGenerator, intToString(variableOffset));
+	char * variableOffsetString = intToString(variableOffset);
+	appendString(codeGenerator, variableOffsetString);
+	free(variableOffsetString);
 	appendString(codeGenerator, "\n	mov eax,[ebx]\n");
 }
 
-static void assignFromEAXToVariable(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * variable, LinkedList * tempStack) {
+static void assignFromEAXToVariable(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * variable, LinkedList * tempStack, bool isReturnType) {
 	appendString(codeGenerator, "\n	push eax\n");
+
 	if ( ! treeIsLeaf(variable) ) {
 		Tree * index = treeGetChild(variable, 0);
 		genCodeExpressionToEAX(symbolTable, codeGenerator, index, tempStack);
-
-		appendString(codeGenerator, "\n	push eax\n call _write");
-		appendString(codeGenerator, "\n	mov edx,eax\n");
+		appendString(codeGenerator, "	mov edx,eax\n");
 	}
 	char * variableName = parseTreeGetAttribute(variable);
 	SearchResult searchResult;
-	symbolTableSearchScope(symbolTable, variableName, &searchResult);
+	symbolTableSearchAll(symbolTable, variableName, &searchResult);
 	int i = searchResult.searchDepth;
-	char * trace = symbolTableScopeTraceString(symbolTable, &labelPrint);
 
-	appendString(codeGenerator, "\n	mov ebx,ebp\n");
-	for(int j = 0; j < i; j++) {
-		appendString(codeGenerator, "\n	mov ecx,[ebp-4]\n	mov ebx,ecx\n");
+	appendString(codeGenerator, "	mov ebx,ebp\n");
+
+	Tree * variableType;
+	if (!isReturnType) { 
+		for(int j = 0; j < i; j++)
+			appendString(codeGenerator, "	mov ecx,[ebx-4]\n	mov ebx,ecx\n");
+		variableType = searchResult.attributes->variableValue;
+	} else {
+		variableType = symbolTablePeakScope(symbolTable)->scopeLocation;
 	}
-	Tree * variableType = searchResult.attributes->variableValue;
 	int variableOffset = parseTreeGetLabel(variableType);
-	appendString(codeGenerator, "\n	add ebx,");
-	appendString(codeGenerator, intToString(variableOffset));
+	appendString(codeGenerator, "	add ebx,");
+	char * variableOffsetString = intToString(variableOffset);
+	appendString(codeGenerator, variableOffsetString);
+	free(variableOffsetString);
 	appendString(codeGenerator, "\n");
 
 	if ( ! treeIsLeaf(variable) ) {
-		appendString(codeGenerator, "\n	mov eax,[ebx]\n	cmp edx,eax\n jl _error\n");
-		appendString(codeGenerator, "\n	mov eax,[ebx-4]\n	cmp edx,eax\n jg _error\n");
-		appendString(codeGenerator, "\n	sub ebx,8\n	mov eax,edx \n	mov edx,4 \n	mul edx\n	 sub ebx,eax\n");
-	} 
-	appendString(codeGenerator, "\n	pop eax\n	mov [ebx],eax \n");
+		appendString(codeGenerator, "	mov eax,[ebx]\n	cmp edx,eax\n	jl _error\n");
+		appendString(codeGenerator, "	mov eax,[ebx-4]\n	cmp edx,eax\n	jg _error\n");
+		appendString(codeGenerator, "	mov eax,[ebx]\n	sub edx,eax\n");
+		appendString(codeGenerator, "	sub ebx,8\n	mov eax,edx \n	mov edx,4 \n	mul edx\n	 sub ebx,eax\n");
+	}
+	appendString(codeGenerator, "	pop eax\n	mov [ebx],eax \n");
 }
 
-static void genCodeIndexVariableAtEAX(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * variable) { // indexing arrayss
-	// char * variableName = parseTreeGetAttribute(variable);
-	// SearchResult searchResult;
-	// symbolTableSearchScope(symbolTable, variableName, &searchResult);
-	// int i = searchResult.searchDepth;
-	// char * trace = symbolTableScopeTraceString(symbolTable, &labelPrint);
+static void genCodeIndexVariableAtEAX(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * variable) { // indexing arrays
 
-	// appendString(codeGenerator, "\n	mov ebx,ebp\n");
-	// for(int j = 0; j < i; j++) {
-	// 	appendString(codeGenerator, "\n	mov ecx,[ebp-4]\n	mov ebx,ecx\n");
-	// }
-	// Tree * variableType = searchResult.attributes->variableValue;
-	// int variableOffset = parseTreeGetLabel(variableType);
-	// appendString(codeGenerator, "\n	add ebx,");
-	// appendString(codeGenerator, intToString(variableOffset));
-	// appendString(codeGenerator, "\n");
+	appendString(codeGenerator, "\n	mov edx,eax\n");
+	char * variableName = parseTreeGetAttribute(variable);
+	SearchResult searchResult;
+	symbolTableSearchAll(symbolTable, variableName, &searchResult);
+	int i = searchResult.searchDepth;
 
-	// if ( ! treeIsLeaf(variable) ) {
-	// 	appendString(codeGenerator, "\n	mov eax,[ebx]\n	cmp edx,eax\n jl _error\n");
-	// 	appendString(codeGenerator, "\n	mov eax,[ebx-4]\n	cmp edx,eax\n jg _error\n");
-	// 	appendString(codeGenerator, "\n	sub ebx,8\n	mov eax,edx \n	mov edx,4 \n	mul edx\n	 sub ebx,eax\n");
-	// } 
+	appendString(codeGenerator, "	mov ebx,ebp\n");
+	for(int j = 0; j < i; j++)
+		appendString(codeGenerator, "	mov ecx,[ebx-4]\n	mov ebx,ecx\n");
+	Tree * variableType = searchResult.attributes->variableValue;
+	int variableOffset = parseTreeGetLabel(variableType);
+	appendString(codeGenerator, "	add ebx,");
+	char * variableOffsetString = intToString(variableOffset);
+	appendString(codeGenerator, variableOffsetString);
+	free(variableOffsetString);
+	appendString(codeGenerator, "\n");
+
+	appendString(codeGenerator, "	mov eax,[ebx]\n	cmp edx,eax\n	jl _error\n");
+	appendString(codeGenerator, "	mov eax,[ebx-4]\n	cmp edx,eax\n	jg _error\n");
+	appendString(codeGenerator, "	mov eax,[ebx]\n	sub edx,eax\n");
+	appendString(codeGenerator, "	sub ebx,8\n	mov eax,edx \n	mov edx,4 \n	mul edx\n	 sub ebx,eax\n");
+
+	appendString(codeGenerator, "	mov eax,[ebx] \n");
+}
+
+static int genCodePushArrayVariable(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * arrayType, Tree * variable) { // indexing arrays
+	int lowerBound = parseTreeGetLabel(treeGetChild(arrayType, 0));
+	int upperBound = parseTreeGetLabel(treeGetChild(arrayType, 1));
+	int arraySize = upperBound - lowerBound + 1;
+
+	char * variableName = parseTreeGetAttribute(variable);
+	SearchResult searchResult;
+	symbolTableSearchAll(symbolTable, variableName, &searchResult);
+	int i = searchResult.searchDepth;
+
+	appendString(codeGenerator, "	mov ebx,ebp\n");
+	for(int j = 0; j < i; j++)
+		appendString(codeGenerator, "	mov ecx,[ebx-4]\n	mov ebx,ecx\n");
+	Tree * variableType = searchResult.attributes->variableValue;
+	int variableOffset = parseTreeGetLabel(variableType);
+	appendString(codeGenerator, "	add ebx,");
+	char * variableOffsetString = intToString(variableOffset);
+	appendString(codeGenerator, variableOffsetString);
+	free(variableOffsetString);
+	appendString(codeGenerator, "\n");
+
+
+	appendString(codeGenerator, "	mov eax,[ebx]\n	push eax\n	mov eax,[ebx-4]\n	push eax\n");
+
+	for(int i = 0; i < arraySize; i++) {
+		char * indexValue = intToString(i * 4 + 8);
+		appendString(codeGenerator, "	mov eax,[ebx-");
+		appendString(codeGenerator, indexValue);
+		appendString(codeGenerator, "]\n");
+		appendString(codeGenerator, "	push eax\n");
+		free(indexValue);
+	}
+	return arraySize + 2;
 }
 
 
+// TODO : call function, procedure, write tommorrow
 static void callFunctionPutInEAX(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * functionCall, LinkedList * tempStack ) {
-	
+	char * functionName = parseTreeGetAttribute(functionCall);
+
+	SearchResult searchResult;
+	bool foundResult = symbolTableSearchAll(symbolTable, functionName, &searchResult);
+
+	Tree * procedureDefinition;
+	int searchDepth;
+	if (!foundResult) {
+		SymbolTableScope * currentScope = symbolTablePeakScope(symbolTable);
+		procedureDefinition = currentScope->scopeLocation;
+		searchDepth = 1;
+	} else {
+		procedureDefinition = searchResult.attributes->variableValue;
+		searchDepth = searchResult.searchDepth;
+	}
+	Tree * parameterList = treeGetChild(procedureDefinition, 0);
+	Iterator * parameterListIterator = iteratorInit(treeGetChildren(parameterList));
+
+	Tree * write_argumentList = treeGetChild(functionCall, 0);
+	Iterator * write_arguments_iterator = iteratorInit(treeGetChildren(write_argumentList));
+
+
+	appendString(codeGenerator, "\n	push 0\n"); // push return value
+	int numberOfPushedElements = 1;
+	while (iteratorHasNext(parameterListIterator)) {
+		Tree * identifier_list = iteratorGetNext(parameterListIterator);
+		Tree * identifier_type = iteratorGetNext(parameterListIterator);
+		int numberOfTypes = treeGetSize(identifier_list);
+
+		int parameterType = parseTreeGetType(identifier_type);
+
+		if (parameterType == LL_ARRAY) { 
+			for (int i = 0; i < numberOfTypes; i++) {
+				Tree * arg = iteratorGetNext(write_arguments_iterator);
+				numberOfPushedElements += genCodePushArrayVariable(symbolTable, codeGenerator, identifier_type, arg);
+			}
+		} else {
+			for (int i = 0; i < numberOfTypes; i++) {
+				Tree * arg = iteratorGetNext(write_arguments_iterator);
+				genCodeExpressionToEAX(symbolTable, codeGenerator, arg, tempStack);
+				appendString(codeGenerator, "\n	push eax\n");
+				numberOfPushedElements++;
+			}
+		}
+	}
+	iteratorDestroy(write_arguments_iterator);
+	iteratorDestroy(parameterListIterator);
+
+	appendString(codeGenerator, "\n	mov eax, ebp\n");
+	for (int i = 0; i < searchDepth; i++)
+		appendString(codeGenerator, "	mov ecx,[eax-4]\n	mov eax,ecx\n");
+	char * callLabel = symbolTableScopeTraceStringAtDepth(symbolTable, searchDepth, &labelPrint);
+	appendString(codeGenerator, "\n	call ");
+	appendString(codeGenerator, callLabel);
+	appendString(codeGenerator, functionName);
+	appendString(codeGenerator, "\n");
+	for (int i = 0; i < numberOfPushedElements; i++)
+		appendString(codeGenerator, "	pop eax\n");
+
+	free(callLabel);	
 }
 
-static void callFunctionProcedure(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * functionCall, LinkedList * tempStack ) {
-	
-}
+static void callProcedure(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * procedureCall, LinkedList * tempStack) {
+	char * procedureName = parseTreeGetAttribute(procedureCall);
 
+	SearchResult searchResult;
+	symbolTableSearchAll(symbolTable, procedureName, &searchResult);
+
+	Tree * procedureDefinition = searchResult.attributes->variableValue;
+	Tree * parameterList = treeGetChild(procedureDefinition, 0);
+	Iterator * parameterListIterator = iteratorInit(treeGetChildren(parameterList));
+
+	Tree * write_argumentList = treeGetChild(procedureCall, 0);
+	Iterator * write_arguments_iterator = iteratorInit(treeGetChildren(write_argumentList));
+
+	int numberOfPushedElements = 0;
+	while (iteratorHasNext(parameterListIterator)) {
+		Tree * identifier_list = iteratorGetNext(parameterListIterator);
+		Tree * identifier_type = iteratorGetNext(parameterListIterator);
+		int numberOfTypes = treeGetSize(identifier_list);
+
+		int parameterType = parseTreeGetType(identifier_type);
+
+		if (parameterType == LL_ARRAY) { 
+			for (int i = 0; i < numberOfTypes; i++) {
+				Tree * arg = iteratorGetNext(write_arguments_iterator);
+				numberOfPushedElements += genCodePushArrayVariable(symbolTable, codeGenerator, identifier_type, arg);
+			}
+		} else {
+			for (int i = 0; i < numberOfTypes; i++) {
+				Tree * arg = iteratorGetNext(write_arguments_iterator);
+				genCodeExpressionToEAX(symbolTable, codeGenerator, arg, tempStack);
+				appendString(codeGenerator, "\n	push eax\n");
+				numberOfPushedElements++;
+			}
+		}
+	}
+	iteratorDestroy(write_arguments_iterator);
+	iteratorDestroy(parameterListIterator);
+
+	int searchDepth = searchResult.searchDepth;
+	appendString(codeGenerator, "\n	mov eax, ebp\n");
+	for (int i = 0; i < searchDepth; i++)
+		appendString(codeGenerator, "	mov ecx,[eax-4]\n	mov eax,ecx\n");
+	char * callLabel = symbolTableScopeTraceStringAtDepth(symbolTable, searchDepth, &labelPrint);
+	appendString(codeGenerator, "\n	call ");
+	appendString(codeGenerator, callLabel);
+	appendString(codeGenerator, procedureName);
+	appendString(codeGenerator, "\n");
+	for (int i = 0; i < numberOfPushedElements; i++)
+		appendString(codeGenerator, "	pop eax\n");
+
+	free(callLabel);
+}
 
 
 static bool genCodeExpressionToEAX(SymbolTable * symbolTable, CodeGenerator * codeGenerator, Tree * expression, LinkedList * tempStack) {
 	int expressionType = parseTreeGetType(expression);
-	char * expressionAttribute = parseTreeGetAttribute(expression);
-	SearchResult searchResult;
-	symbolTableSearchAll(symbolTable, expressionAttribute, &searchResult);
-	Tree * actualTypeLocation = searchResult.attributes->variableValue;
 	if (expressionType == LL_ID) { // leaf
+
+		char * expressionAttribute = parseTreeGetAttribute(expression);
 		SearchResult searchResult;
-		char * variableName = parseTreeGetAttribute(expression);
-		symbolTableSearchAll(symbolTable, variableName, &searchResult);
+		bool foundResult = symbolTableSearchAll(symbolTable, expressionAttribute, &searchResult);
 		
+		Tree * actualTypeLocation;
+		if (!foundResult) { // function recusion 
+			SymbolTableScope * currentScope = symbolTablePeakScope(symbolTable);
+			actualTypeLocation = currentScope->scopeLocation;
+		} else {
+			actualTypeLocation = searchResult.attributes->variableValue;
+		}
 		
+
 		int actualType = parseTreeGetType(actualTypeLocation);
+
 		if(actualType != LL_ID) {
 			callFunctionPutInEAX(symbolTable, codeGenerator, expression, tempStack );   // calculate function
 		} else {
 			if ( ! treeIsLeaf(expression) ) {
 				Tree * index = treeGetChild(expression, 0);
 				genCodeExpressionToEAX(symbolTable, codeGenerator, index, tempStack);
-				genCodeIndexVariableAtEAX(symbolTable, codeGenerator, index);
+				genCodeIndexVariableAtEAX(symbolTable, codeGenerator, expression);
+
 			} else {
 				Tree * typeTypeLocation = searchResult.attributes->variableType;
 				int type = parseTreeGetType(typeTypeLocation);
@@ -650,7 +910,7 @@ static bool genCodeExpressionToEAX(SymbolTable * symbolTable, CodeGenerator * co
 				appendString(codeGenerator, "\n	not eax\n");
 			} else { // negate operator
 				appendString(codeGenerator, "\n	mov ebx,-1\n");
-				appendString(codeGenerator, "mul ebx\n");
+				appendString(codeGenerator, "	mul ebx\n");
 			}
 		} else {
 			Tree * leftChild = treeGetChild(expression, 0);
@@ -658,17 +918,17 @@ static bool genCodeExpressionToEAX(SymbolTable * symbolTable, CodeGenerator * co
 			int leftChildLabel = parseTreeGetLabel(leftChild);
 			int rightChildLabel = parseTreeGetLabel(rightChild);
 			int childType = parseTreeGetType(leftChild);
-			if (rightChildLabel == 0) { 
+			if (rightChildLabel == 0) {
 				int topStack = safePeak(tempStack);
 				genCodeExpressionToEAX(symbolTable, codeGenerator, leftChild, tempStack);
-				if (childType == LL_ID || childType == LL_NUM) {
+				if (treeGetSize(leftChild) < 2) {
 					appendString(codeGenerator, "\n	mov [");
 					appendRegBPString(codeGenerator, topStack);
 					appendString(codeGenerator, "],eax");
 				}
 				genCodeExpressionToEAX(symbolTable, codeGenerator, rightChild, tempStack);
 				
-				appendString(codeGenerator, "\n mov ecx,eax\n");
+				appendString(codeGenerator, "\n	mov ecx,eax\n");
 				appendString(codeGenerator, "	mov ebx,[");
 				appendRegBPString(codeGenerator, topStack);
 				appendString(codeGenerator, "]\n");
@@ -685,7 +945,7 @@ static bool genCodeExpressionToEAX(SymbolTable * symbolTable, CodeGenerator * co
 				int R = safePop(tempStack);
 				genCodeExpressionToEAX(symbolTable, codeGenerator, leftChild, tempStack);
 				int topStack = safePeak(tempStack);
-				if (childType == LL_ID || childType == LL_NUM) {
+				if (treeGetSize(leftChild) < 2) {
 					appendString(codeGenerator, "\n mov [");
 					appendRegBPString(codeGenerator, topStack);
 					appendString(codeGenerator, "],eax");
@@ -704,13 +964,13 @@ static bool genCodeExpressionToEAX(SymbolTable * symbolTable, CodeGenerator * co
 				appendRegBPString(codeGenerator, R);
 				appendString(codeGenerator, "],eax\n");
 
-				safePush(codeGenerator, R);
+				safePush(tempStack, R);
 				safeSwap(tempStack);
 			} else {
 				genCodeExpressionToEAX(symbolTable, codeGenerator, leftChild, tempStack);
 				int topStack = safePeak(tempStack);
-				if (childType == LL_ID || childType == LL_NUM) {
-					appendString(codeGenerator, "\n mov [");
+				if (treeGetSize(leftChild) < 2) {
+					appendString(codeGenerator, "\n	mov [");
 					appendRegBPString(codeGenerator, topStack);
 					appendString(codeGenerator, "],eax");
 				}
@@ -718,7 +978,7 @@ static bool genCodeExpressionToEAX(SymbolTable * symbolTable, CodeGenerator * co
 				genCodeExpressionToEAX(symbolTable, codeGenerator, rightChild, tempStack);
 				topStack = safePeak(tempStack);
 				
-				appendString(codeGenerator, "\n mov ecx,[");
+				appendString(codeGenerator, "\n	mov ecx,[");
 				appendRegBPString(codeGenerator, topStack);
 				appendString(codeGenerator, "]\n");
 
@@ -732,7 +992,7 @@ static bool genCodeExpressionToEAX(SymbolTable * symbolTable, CodeGenerator * co
 				appendRegBPString(codeGenerator, R);
 				appendString(codeGenerator, "],eax\n");
 
-				safePush(codeGenerator, R);
+				safePush(tempStack, R);
 			}
 		}
 
@@ -761,7 +1021,7 @@ static void genCodeTwoNodeOperation(CodeGenerator * codeGenerator, char * operat
 		temp = "\n 	sub ebx, ecx\n"
 	    		"	mov eax, ebx\n";
 	} else if (strcmp(operator, "or") == 0) {
-		temp = "\n 	and ebx, ecx\n"
+		temp = "\n 	or ebx, ecx\n"
 	    		"	mov eax, ebx\n";
 	} else if (strcmp(operator, "*") == 0) {
 		temp =  "\n	mov eax, ebx\n"
@@ -778,7 +1038,7 @@ static void genCodeTwoNodeOperation(CodeGenerator * codeGenerator, char * operat
 		temp =  "\n	mov eax, ebx\n"
 				"	mov edx, 0\n"
 				"	div ecx\n"
-				"	mov eax,edx \n";
+				"	mov eax,edx\n";
 	} else if (strcmp(operator, "and") == 0) {
 		temp = "\n	and ebx, ecx\n"
 	    		"	mov eax, ebx\n";
@@ -847,12 +1107,17 @@ static int labelVariables(Tree * variableList, bool areParameters) {
 			else
 				identifier 	= (Tree *) iteratorGetNext(identifier_iterator);
 
-			parseTreeSetLabel(identifier, labelIndex * 4);
-			
-			if(areParameters)
+			if (type == LL_ARRAY && areParameters) {
 				labelIndex += increment;
-			else
-				labelIndex -= increment;
+				parseTreeSetLabel(identifier, (labelIndex-1) * 4);
+			} else {
+				parseTreeSetLabel(identifier, labelIndex * 4);
+			
+				if(areParameters)
+					labelIndex += increment;
+				else
+					labelIndex -= increment;
+			}
 		}
 		iteratorDestroy(identifier_iterator);
 	}

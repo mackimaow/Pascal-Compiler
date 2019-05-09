@@ -64,6 +64,15 @@ static bool searchAllForEach(ObjectType * objectType, int index, void * element,
 		searchResult->foundResult = true;
 		searchResult->attributes = variableAttr;
 		return true;
+	} else {
+		Tree * scopeLocation = tableScope->scopeLocation;
+		if (scopeLocation != 0) {
+			int scopeType = parseTreeGetType(scopeLocation);
+			if (scopeType == LL_FUNCTION) {
+				searchResult->foundResult = false;
+				return true;
+			}
+		}
 	}
 	return false;
 }
@@ -96,6 +105,7 @@ SymbolTable * symbolTableInit() {
 	SymbolTableScope * symbolTableScope = malloc(sizeof(SymbolTableScope));
 	symbolTableScope->name = copyString("PASCAL");
 	symbolTableScope->hashTable = hashTableInit(TABLE_SIZE, hashpjw, STRING_TYPE, VARIABLE_ATTR_TYPE);
+	symbolTableScope->scopeLocation = 0;
 	linkedListPush(symbolTable, symbolTableScope);
 
 	createSpecialProcedure(symbolTable, "read", READ_PROCEDURE_ID);
@@ -170,6 +180,7 @@ void symbolTablePopScope(SymbolTable * symbolTable) {
 
 bool symbolTableSearchScope(SymbolTable * symbolTable, char* variableName, SearchResult * searchResult) {
 	searchResult->searchDepth = -1;
+	searchResult->foundResult = false;
 	if(linkedListGetSize(symbolTable) > 0){ 
 		SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
 		searchResult->scopeName = tableScope->name;
@@ -183,8 +194,11 @@ bool symbolTableSearchScope(SymbolTable * symbolTable, char* variableName, Searc
 
 bool symbolTableSearchAll(SymbolTable * symbolTable, char* variableName, SearchResult * searchResult) {
 	searchResult->searchDepth = -1;
-	if(linkedListGetSize(symbolTable) > 0)
-		return linkedListForEach(symbolTable, searchAllForEach, 2, variableName, searchResult);
+	searchResult->foundResult = false;
+	if(linkedListGetSize(symbolTable) > 0)  {
+		linkedListForEach(symbolTable, searchAllForEach, 2, variableName, searchResult);
+		return searchResult->foundResult;
+	}
 	return false;
 }
 
@@ -257,6 +271,22 @@ char* symbolTableScopeTraceString(SymbolTable * symbolTable, ListPrintProperties
 		return temp;
 	}
 	return 0;
+}
+
+
+char* symbolTableScopeTraceStringAtDepth(SymbolTable * symbolTable, int depth, ListPrintProperties * listPrintProperties) {
+	int tableSize = linkedListGetSize(symbolTable);
+	if(tableSize > 0) {
+		LinkedList * stringList = linkedListInitWithPrintProperties(&STRING_OBJECT, listPrintProperties);
+		linkedListForEach(symbolTable, getScopeStringForEach, 1, stringList);
+		linkedListPop(stringList);
+		for (int i = 0; i < depth; i++)
+			linkedListPopBack(stringList);
+		char * temp = linkedListToString(stringList);
+		linkedListDestroy(stringList);
+		return temp;
+	}
+	return 0;	
 }
 
 int symbolTableGetScopeDepth(SymbolTable * symbolTable) {
