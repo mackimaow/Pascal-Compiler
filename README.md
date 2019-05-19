@@ -10,20 +10,6 @@ by
 Massimiliano Cutugno
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## Design Document
 
 ### Lexical Analyzer
@@ -75,7 +61,7 @@ List of tokens (terminals symbols) used for grammar:
  ### Parser (Syntax Analyzer)
 After the input source code is processed by the lexical analyzer (if the input does not contain any unrecognized characters) the parser constructs a parse tree. The compiler used “yacc” to build the syntax analyzer in c. The context free grammar used for this parser is listed below as a sequence of nonterminal definitions. It is worth noting that the grammer’s starting non-terminal is “program”. Furthermore, to rid of the dangling else ambiguous grammar, two additional non-terminal types (matched_stmt and unmatched_stmt) had to be constructed.
 
-List of  (nonterminals) used for Gramma:
+List of  (nonterminals) used for grammar:
 
 | Non-Terminal | Non-Terminal Rule(s) |
 | --- | --- |
@@ -128,18 +114,19 @@ After the constructing the parse tree from the specified grammer, the compiler t
 
 ### Code Generation
 The compiler is finally ready to generate assembly source code after it successfully passes through the semantic analyzer stage with no violations of specified rules. This compiler then generates x86 assembly code (intel syntax). The code generated can be then executed after the user installs nasm (or any equivalent object compiler program that takes in x86 assembly code). There is only one expected type of error that could happen and is safely handled by stopping the execution of the program. This error occurs when the users decides to index a array which is out of the bounds of the array given. A segmented fault should never occur after executing the assembly code.
+
 The follow table shows the stack arrangement used the a procedure/function call:
 
- | Stack for procedure/function call with N size parameters, M local variables, and S temporary registers |
- | ... |
- |  temporary register S  |
- |  :  |
- |  temporary register 1  |
- |  local variable M  |
- |  :  |
- |  local variable 1  |
- |  calling scope bsp  (current scope bsp points to this address)  |
- |  return instruction address   |
- |  parameter N  |
- |  :  |
- |  parameter 1  |
+ | Stack for procedure/function call with N size parameters, M local variables, and S temporary registers | Address Significance |
+ | ... | |
+ |  temporary register S  | |
+ |  :  | |
+ |  temporary register 1  | |
+ |  local variable M  | |
+ |  :  | |
+ |  local variable 1  | |
+ |  calling scope bsp  | current scope bsp points to this address |
+ |  return instruction address   | |
+ |  parameter N  | |
+ |  :  | |
+ |  parameter 1  | |
