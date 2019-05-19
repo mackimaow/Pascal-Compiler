@@ -236,6 +236,7 @@ bool  linkedListRemoveElement (  LinkedList * linkedList,  void * element ) {
 
 void* linkedListGet (  LinkedList * linkedList,  int i ) {
 	Single single;
+	single.element = 0;
 	linkedListForEach (linkedList, getForEach, 2, &i, &single);
 	return single.element;
 }
@@ -358,48 +359,42 @@ bool linkedListForEach (  LinkedList * linkedList, ForEach forEach, int numArgs,
 }
 
 
-
-
-Iterator * iteratorInit(LinkedList * linkedList) {
-	Iterator * iterator = malloc(sizeof(Iterator));
-	iterator->next = linkedList->first;
-	iterator->previous = 0;
-	return iterator;
+static bool linkedListIteratorHasNext(int numIteratorFields, void ** iteratorFields) {
+	return iteratorFields[1]? true : false;
 }
 
-void iteratorDestroy(Iterator * iterator) {
-	free(iterator);
+static bool linkedListIteratorHasPrevious(int numIteratorFields, void ** iteratorFields) {
+	return iteratorFields[0]? true : false;
 }
 
-Iterator * iteratorInitBack(LinkedList * linkedList) {
-	Iterator * iterator = malloc(sizeof(Iterator));
-	iterator->next = 0;
-	iterator->previous = linkedList->last;
-	return iterator;
-}
-
-bool iteratorHasNext(Iterator * iterator) {
-	return iterator->next? true : false;
-}
-
-bool iteratorHasPrevious(Iterator * iterator) {
-	return iterator->previous? true : false;
-}
-
-void * iteratorGetNext(Iterator * iterator) {
-	if(iterator->next) {
-		iterator->previous = iterator->next;
-		iterator->next = iterator->previous->next;
-		return iterator->previous->element;
+static void * linkedListIteratorGetNext(int numIteratorFields, void ** iteratorFields) {
+	LinkedNode * next = (LinkedNode *) iteratorFields[1];
+	if(next) {
+		iteratorFields[0] = next;
+		iteratorFields[1] = next->next;
+		return next->element;
 	}
 	return 0;
 }
 
-void * iteratorGetPrevious(Iterator * iterator) {
-	if(iterator->previous) {
-		iterator->next = iterator->previous;
-		iterator->previous = iterator->next->previous;
-		return iterator->next->element;
+static void * linkedListIteratorGetPrevious(int numIteratorFields, void ** iteratorFields) {
+	LinkedNode * previous = (LinkedNode *) iteratorFields[0];
+	if(previous) {
+		iteratorFields[1] = previous;
+		iteratorFields[0] = previous->previous;
+		return previous->element;
 	}
 	return 0;
+}
+
+Iterator * linkedListIteratorInit(LinkedList * linkedList) {
+	Iterator * iterator = iteratorInit(linkedListIteratorHasNext, linkedListIteratorHasPrevious, linkedListIteratorGetNext,
+ 										linkedListIteratorGetPrevious, 0, 2, 0, linkedList->first);
+	return iterator;
+}
+
+Iterator * linkedListIteratorInitBack(LinkedList * linkedList) {
+	Iterator * iterator = iteratorInit(linkedListIteratorHasNext, linkedListIteratorHasPrevious, linkedListIteratorGetNext,
+ 										linkedListIteratorGetPrevious, 0, 2, linkedList->last, 0);
+	return iterator;
 }

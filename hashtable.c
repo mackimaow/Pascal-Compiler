@@ -178,6 +178,11 @@ void* hashTableGet(HashTable * hashTable, void* key) {
 	return 0;
 }
 
+bool hashTableContains(HashTable * hashTable, void* key) {
+	void * retreivedValue = hashTableGet(hashTable, key);
+	return retreivedValue? true : false;
+}
+
 void hashTableRemove(HashTable * hashTable, void* key) {
 	int index = hashTable->hashFunction(key);
 	LinkedList * bucket = hashTable->buckets[index];
@@ -229,4 +234,134 @@ char* hashTableToString(HashTable * hashTable) {
 	linkedListDestroy(bucketStrings);
 
 	return temp;	
+}
+
+
+
+
+
+static Iterator * hashTableGetNextBucketIterator(HashTable * hashTable, int * currentBucket) {
+	(*currentBucket)++;
+	for(; (*currentBucket) < hashTable->capacity; (*currentBucket)++) { 
+		LinkedList * bucket = hashTable->buckets[*currentBucket];
+		if (bucket != 0 && linkedListGetSize(bucket) > 0)
+			return linkedListIteratorInit(bucket);
+	}
+	return 0;
+}
+
+static Iterator * hashTableGetPreviousBucketIterator(HashTable * hashTable, int * currentBucket) {
+	(*currentBucket)--;
+	for(; (*currentBucket) >= 0; (*currentBucket)--) { 
+		LinkedList * bucket = hashTable->buckets[*currentBucket];
+		if (bucket != 0 && linkedListGetSize(bucket) > 0)
+			return linkedListIteratorInitBack(bucket);
+	}
+	return 0;
+}
+
+static bool hashTableIteratorHasNext(int numIteratorFields, void ** iteratorFields) {
+	HashTable * hashTable = iteratorFields[0];
+	int * currentBucket = iteratorFields[1];
+	Iterator * bucketIterator = iteratorFields[2];
+
+	if (bucketIterator) {
+		if (iteratorHasNext(bucketIterator))
+			return true;
+		if (*currentBucket == hashTable->capacity - 1)
+			return false;
+
+		int nextBucket = *currentBucket;
+		Iterator * nextBucketIterator = hashTableGetNextBucketIterator(hashTable, &nextBucket);
+		if (nextBucketIterator) {
+			iteratorDestroy(nextBucketIterator);
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool hashTableIteratorHasPrevious(int numIteratorFields, void ** iteratorFields) {
+	HashTable * hashTable = iteratorFields[0];
+	int * currentBucket = iteratorFields[1];
+	Iterator * bucketIterator = iteratorFields[2];
+
+	if (bucketIterator) {
+		if (iteratorHasPrevious(bucketIterator))
+			return true;
+		if (*currentBucket == 0)
+			return false;
+
+		int previousBucket = *currentBucket;
+		Iterator * previousBucketIterator = hashTableGetPreviousBucketIterator(hashTable, &previousBucket);
+		if (previousBucketIterator) {
+			iteratorDestroy(previousBucketIterator);
+			return true;
+		}
+	}
+	return false;
+}
+
+static void * hashTableIteratorGetNext(int numIteratorFields, void ** iteratorFields) {
+	HashTable * hashTable = iteratorFields[0];
+	int * currentBucket = iteratorFields[1];
+	Iterator * bucketIterator = iteratorFields[2];
+
+	if (bucketIterator) {
+		if (iteratorHasNext(bucketIterator))
+			return iteratorGetNext(bucketIterator);
+		if (*currentBucket == hashTable->capacity - 1)
+			return 0;
+
+		int nextBucket = *currentBucket;
+		Iterator * nextBucketIterator = hashTableGetNextBucketIterator(hashTable, &nextBucket);
+		if (nextBucketIterator) {
+			*currentBucket = nextBucket;
+			iteratorFields[2] = nextBucketIterator;
+			iteratorDestroy(bucketIterator);
+			return iteratorGetNext(nextBucketIterator);
+		}
+	}
+	return 0;
+}
+
+static void * hashTableIteratorGetPrevious(int numIteratorFields, void ** iteratorFields) {
+	HashTable * hashTable = iteratorFields[0];
+	int * currentBucket = iteratorFields[1];
+	Iterator * bucketIterator = iteratorFields[2];
+
+	if (bucketIterator) {
+		if (iteratorHasPrevious(bucketIterator))
+			return iteratorGetPrevious(bucketIterator);
+		if (*currentBucket == 0)
+			return 0;
+
+		int previousBucket = *currentBucket;
+		Iterator * previousBucketIterator = hashTableGetPreviousBucketIterator(hashTable, &previousBucket);
+		if (previousBucketIterator) {
+			*currentBucket = previousBucket;
+			iteratorFields[2] = previousBucketIterator;
+			iteratorDestroy(bucketIterator);
+			return iteratorGetPrevious(previousBucketIterator);
+		}
+	}
+	return 0;
+}
+
+static void hashTableIteratorDestroy(int numIteratorFields, void ** iteratorFields) {
+	int * currentBucket = iteratorFields[1];
+	int * bucketIterator = iteratorFields[2];
+	free(currentBucket);
+	if (bucketIterator != 0)
+		free(bucketIterator);
+}
+
+
+Iterator * hashTableIteratorInit(HashTable * hashTable) {
+	int * currentBucket = malloc(sizeof(int));
+	*currentBucket = -1;
+	Iterator * bucketIterator = hashTableGetNextBucketIterator(hashTable, currentBucket);
+
+	return iteratorInit(hashTableIteratorHasNext, hashTableIteratorHasPrevious, hashTableIteratorGetNext,
+ 						hashTableIteratorGetPrevious, hashTableIteratorDestroy, 4, hashTable, currentBucket, bucketIterator);
 }

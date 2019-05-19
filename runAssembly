@@ -6,16 +6,10 @@ if [ $# -eq 0 ] ; then
 fi
 
 
-
-fileName=$(echo $1 | sed -E "s|^(.*).asm$|\1|g")
+fileName=$(echo $1 | sed -E "s|^(.*).(.*)$|\1|g")
 linkerFile="${fileName}.o"
 
 nasm -f elf32 $1 -o ${linkerFile}
-
-if [ ! $? -eq 0 ] ; then
-    exit 1
-fi
-
-
 ld -m elf_i386 ${linkerFile} -o ${fileName}
+
 ./${fileName}

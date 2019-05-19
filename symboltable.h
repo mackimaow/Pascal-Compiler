@@ -16,6 +16,7 @@ typedef struct SymbolTableScope {
 	HashTable * hashTable;
 	Tree * scopeLocation;
 	int maxNumberOfTempRegs;
+	int numberOfIndexedArrays;
 	int numberOfWhileLoops;
 	int numberOfIfStatements;
 	int numberOfForLoops;
@@ -47,12 +48,14 @@ bool symbolTableSearchScope(SymbolTable * symbolTable, char* variableName, Searc
 bool symbolTableSearchAll(SymbolTable * symbolTable, char* variableName, SearchResult * searchResult);
 char * symbolTableGetScopeName(SymbolTable * symbolTable);
 
+void symbolTableIncrIndexedArrays(SymbolTable * symbolTable);
 void symbolTableIncrWhile(SymbolTable * symbolTable);
 void symbolTableIncrFor(SymbolTable * symbolTable);
 void symbolTableIncrIf(SymbolTable * symbolTable);
 void symbolTableUpdateTempRegs(SymbolTable * symbolTable, int newValue);
 
 
+int symbolTableGetNumIndexedArrays(SymbolTable * symbolTable);
 int symbolTableGetNumWhile(SymbolTable * symbolTable);
 int symbolTableGetNumFor(SymbolTable * symbolTable);
 int symbolTableGetNumIf(SymbolTable * symbolTable);

@@ -4,7 +4,7 @@ ROUTINES = semantic_analyzer.o code_generator.o
 YACC = y.tab.o
 LEX = lex.yy.o
 MISC = symboltable.o parsetree.o
-COLLECTIONS = hashtable.o tree.o linkedlist.o
+COLLECTIONS = hashtable.o tree.o linkedlist.o iterator.o
 UTILS = lexconstants.o utils.o object.o
 GCC = -std=gnu99
 
@@ -48,16 +48,19 @@ symboltable.o: symboltable.h symboltable.c $(COLLECTIONS) $(UITLS)
 parsetree.o: parsetree.h parsetree.c $(COLLECTIONS) $(UITLS)
 	gcc -c $(GCC) parsetree.c
 
-# generic custom collections
+# Generic custom collections
 
-hashtable.o: hashtable.h hashtable.c linkedlist.o $(UITLS)
+hashtable.o: hashtable.h hashtable.c linkedlist.o iterator.o $(UITLS)
 	gcc -c $(GCC) hashtable.c
 
-tree.o: tree.h tree.c linkedlist.o $(UITLS)
+tree.o: tree.h tree.c linkedlist.o iterator.o $(UITLS)
 	gcc -c $(GCC) tree.c
 
-linkedlist.o: linkedlist.h linkedlist.c $(UITLS)
-	gcc -c $(GCC) linkedlist.c 
+linkedlist.o: linkedlist.h linkedlist.c iterator.o $(UITLS)
+	gcc -c $(GCC) linkedlist.c
+
+iterator.o: iterator.c iterator.h
+	gcc -c $(GCC) iterator.c
 
 
 # Utility

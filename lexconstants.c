@@ -23,7 +23,7 @@ void processLexString(char * string) {
 }
 
 void lexError(char * stringValue) {
-	printf("[ERROR] LEXICAL ANALYZER FAILED AT (%i:%i) -> %s?\n", lineNumber, lineIndex, stringValue);
+	fprintf(stderr,"[ERROR] LEXICAL ANALYZER FAILED AT (%i:%i) -> %s?\n", lineNumber, lineIndex, stringValue);
 	exit(1);
 }
 

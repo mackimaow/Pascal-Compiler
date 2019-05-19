@@ -4,10 +4,10 @@
 #include <stdbool.h>
 #include "utils.h"
 #include "object.h"
+#include "iterator.h"
 
 typedef struct LinkedList LinkedList;
 typedef struct LinkedNode LinkedNode;
-typedef struct Iterator Iterator;
 
 LinkedList* linkedListInit ( ObjectType * elementType ) ;
 LinkedList* linkedListInitWithPrintProperties ( ObjectType * elementType, ListPrintProperties * printProperties);
@@ -42,13 +42,8 @@ bool  linkedListForEach (  LinkedList * linkedList, ForEach forEach, int numArgs
 
 // Iterator functions
 
-Iterator * iteratorInit(LinkedList * linkedList);
-void iteratorDestroy(Iterator * iterator);
-Iterator * iteratorInitBack(LinkedList * linkedList);
-bool iteratorHasNext(Iterator * iterator);
-bool iteratorHasPrevious(Iterator * iterator);
-void * iteratorGetNext(Iterator * iterator); 
-void * iteratorGetPrevious(Iterator * iterator); 
+Iterator * linkedListIteratorInit(LinkedList * linkedList);
+Iterator * linkedListIteratorInitBack(LinkedList * linkedList);
 
 
 #endif // LINKEDLIST_H

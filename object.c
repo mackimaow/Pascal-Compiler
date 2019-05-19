@@ -6,9 +6,9 @@
 #include "utils.h"
 
 struct ObjectType {
-	ToStringFunction * toStringFunction;
-	CompareFunction * compareFunction;
-	Destructor * destructor;
+	ObjectTypeToStringFunction * toStringFunction;
+	ObjectTypeCompareFunction * compareFunction;
+	ObjectTypeDestructor * destructor;
 	int nestedTypesSize;
 	ObjectType ** nestedTypes;
 	int numProperties;
@@ -37,11 +37,11 @@ static ObjectType * NULL_TYPE;
 
 
 
-ObjectType * objectTypeInit(ToStringFunction * toStringFunction, CompareFunction * compareFunction, Destructor * destructor) {
+ObjectType * objectTypeInit(ObjectTypeToStringFunction * toStringFunction, ObjectTypeCompareFunction * compareFunction, ObjectTypeDestructor * destructor) {
 	return objectTypePropertiesNestedInit(toStringFunction, compareFunction, destructor, 0, 0);
 }
 
-ObjectType * objectTypePropertiesNestedInit(ToStringFunction * toStringFunction, CompareFunction * compareFunction, Destructor * destructor, int nestedTypesSize, int numProperties,  ...) {
+ObjectType * objectTypePropertiesNestedInit(ObjectTypeToStringFunction * toStringFunction, ObjectTypeCompareFunction * compareFunction, ObjectTypeDestructor * destructor, int nestedTypesSize, int numProperties,  ...) {
 	ObjectType * objType = malloc(sizeof(ObjectType));
 	objType->toStringFunction = toStringFunction;
 	objType->compareFunction = compareFunction;
@@ -71,7 +71,10 @@ ObjectType * objectTypePropertiesNestedInit(ToStringFunction * toStringFunction,
 }
 
 void objectTypeDestroyTypeOnly(ObjectType * objectType) {
-	free(objectType->nestedTypes);
+	if (objectType->nestedTypes)
+		free(objectType->nestedTypes);
+	if (objectType->properties)
+		free(objectType->properties);
 	free(objectType);
 }
 
@@ -196,8 +199,8 @@ static char* STRING_TO_STRING(ObjectType * objectType, void * value){
 }
 
 static int STRING_COMPARE(ObjectType * objectType, void * value1, void * value2){
-	char * string1 = *(char **)value1;
-	char * string2 = *(char **)value2;
+	char * string1 = (char *)value1;
+	char * string2 = (char *)value2;
 	return strcmp(string1, string2);
 }
 
@@ -207,39 +210,7 @@ static void STRING_DESTRUCTOR(ObjectType * objectType, void * value) {
 
 static char* INT_TO_STRING(ObjectType * objectType, void * value){
 	int intValue = *(int *)value;
-	int size = 0;
-	bool isNeg = false;
-	if(intValue < 0) {
-		isNeg = true;
-		intValue  = intValue * -1;
-		size++;
-	}
-	if(intValue != 0) {
-		int currentValue = intValue;
-		while (currentValue != 0) {
-			currentValue /= 10;
-			size++;
-		}
-	} else {
-		size++;
-	}
-
-	char * temp = malloc(sizeof(char) * (size +1));
-	int i = 0;
-	if(isNeg) {
-		*(temp) = '-';
-		i++;
-	}
-
-	int currentValue = intValue;
-	int moduloValue;
-	for(; i < size; i++) {
-		moduloValue = currentValue % 10;
-		*(temp + i) = moduloValue;
-		currentValue /= 10;
-		i++;
-	}
-	*(temp+size) = '\0'; 
+	char * temp = intToString(intValue);
 	return temp;
 }
 

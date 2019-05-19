@@ -9,6 +9,27 @@ MapPrintProperties defaultMapPrintProperties = {"( "," : "," )", &defaultPrintPr
 TreePrintProperties defaultTreePrintProperties = {"[", "]", " |", "__________"};
 
 
+/* ----------------------------------------------------------------------------- 
+ * hashpjw
+ * Peter J. Weinberger's hash function 
+ * Source: Aho, Sethi, and Ullman, "Compilers", Addison-Wesley, 1986 (page 436).
+ */
+int hashpjw( void* value ) {
+	char *s = (char*)value; 
+	char *p; 
+	unsigned h = 0, g; 
+	
+	for ( p = s; *p != EOS; p++ ) { 
+		h = (h << 4) + (*p); 
+		if ( g = h & 0xf0000000 ) { 
+			h = h ^ ( g >> 24 ); 
+			h = h ^ g; 
+		} 
+	} 
+	return h % TABLE_SIZE; 
+}
+
+
 void resetOptions (ForEachOptions * options) {
 	options->remove = false;
 	options->insert = 0;
@@ -104,15 +125,33 @@ char * copyString(char * stringValue) {
 	return temp;
 }
 
-char * stringTakeLast(char * totalString, int index) {
+char * stringTakeLast(char * totalString, int startInclusive) {
 	int stringSize = getStringSize(totalString);
-	if(index > stringSize)
+	if(startInclusive < 0 || startInclusive > stringSize)
 		return 0;
-	int newSize = stringSize - index;
+	int newSize = stringSize - startInclusive;
 	char * lastPart = malloc(sizeof(char) * (newSize + 1));
 	for(int i = 0; i < newSize; i++)
-		lastPart[i] = totalString[index+i];	
+		lastPart[i] = totalString[startInclusive+i];	
 
 	lastPart[newSize] = '\0';
 	return lastPart;
 }
+
+char * stringTakeSubstring(char * totalString, int startInclusive, int endExclusize) {
+	int stringSize = getStringSize(totalString);
+	if(startInclusive < 0 || endExclusize > stringSize || startInclusive > endExclusize)
+		return 0;
+	int newSize = endExclusize - startInclusive;
+	char * lastPart = malloc(sizeof(char) * (newSize + 1));
+	for(int i = 0; i < newSize; i++)
+		lastPart[i] = totalString[startInclusive+i];	
+
+	lastPart[newSize] = '\0';
+	return lastPart;
+}
+
+
+
+
+

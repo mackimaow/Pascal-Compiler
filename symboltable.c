@@ -9,29 +9,8 @@
 #include "symboltable.h"
 
 
-#define TABLE_SIZE	211
-#define EOS		'\0'
-
 ListPrintProperties symbolTablePrintProperties = {"<--------SymbolTable_Top-------->\n", "\n", "\n<--------SymbolTable_Bot-------->\n"};
-/* ----------------------------------------------------------------------------- 
- * hashpjw
- * Peter J. Weinberger's hash function 
- * Source: Aho, Sethi, and Ullman, "Compilers", Addison-Wesley, 1986 (page 436).
- */
-static int hashpjw( void* value ) {
-	char *s = (char*)value; 
-	char *p; 
-	unsigned h = 0, g; 
-	
-	for ( p = s; *p != EOS; p++ ) { 
-		h = (h << 4) + (*p); 
-		if ( g = h & 0xf0000000 ) { 
-			h = h ^ ( g >> 24 ); 
-			h = h ^ g; 
-		} 
-	} 
-	return h % TABLE_SIZE; 
-}
+
 
 //  SCOPE_TYPE
 static char * symbolTableScopeToString (ObjectType * type, void* value);
@@ -149,6 +128,7 @@ bool symbolTableCreateScope(SymbolTable * symbolTable, Tree * properScopeLocatio
 	symbolTableScope->name 					= name;
 	symbolTableScope->scopeLocation 		= properScopeLocation;
 	symbolTableScope->maxNumberOfTempRegs 	= 0;
+	symbolTableScope->numberOfIndexedArrays = 0;
 	symbolTableScope->numberOfWhileLoops 	= 0;
 	symbolTableScope->numberOfIfStatements 	= 0;
 	symbolTableScope->numberOfForLoops 		= 0;
@@ -210,7 +190,10 @@ char * symbolTableGetScopeName(SymbolTable * symbolTable) {
 
 
 
-
+void symbolTableIncrIndexedArrays(SymbolTable * symbolTable) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	tableScope->numberOfIndexedArrays++;
+}
 
 void symbolTableIncrWhile(SymbolTable * symbolTable) {
 	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
@@ -231,6 +214,11 @@ void symbolTableUpdateTempRegs(SymbolTable * symbolTable, int newValue) {
 	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
 	if(newValue > tableScope->maxNumberOfTempRegs)
 		tableScope->maxNumberOfTempRegs = newValue;
+}
+
+int symbolTableGetNumIndexedArrays(SymbolTable * symbolTable) {
+	SymbolTableScope * tableScope = (SymbolTableScope * ) linkedListPeak(symbolTable);
+	return tableScope->numberOfIndexedArrays;
 }
 
 int symbolTableGetNumWhile(SymbolTable * symbolTable) {

@@ -5,6 +5,13 @@
 #include "object.h"
 
 
+// string hashtable stuff  
+#define TABLE_SIZE	211
+#define EOS		'\0'
+
+int hashpjw( void* value ); // hash function on string types
+
+
 // List utils
 
 typedef struct ForEachOptions {
@@ -57,6 +64,8 @@ char * intToString(int integer);
 char * copyString(char * stringValue);
 int getStringSize(char * stringValue);
 void stringInsert(char * totalString, char * insertString, int startIndex);
-char * stringTakeLast(char * totalString, int index);
+char * stringTakeLast(char * totalString, int startInclusive);
+char * stringTakeSubstring(char * totalString, int startInclusive, int endExclusize);
+
 
 #endif // UTILS_H

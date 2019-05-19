@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "semantic_analyzer.h"
+#include "iterator.h"
 #include "linkedlist.h"
 #include "lexconstants.h"
 #include "utils.h"
@@ -18,7 +19,7 @@ static int SINGLE_NODE_EXPRESSION = 0;
 
 
 // Misc
-ListPrintProperties tracePrintProperties = {"", ".", ""};
+static ListPrintProperties tracePrintProperties = {"", ".", ""};
 static bool LEFT_SIDE = true;
 static bool RIGHT_SIDE = false;
 
@@ -74,7 +75,7 @@ static void checkProgram(SymbolTable * symbolTable, Tree * program) {
 
 static void checkSubPrograms(SymbolTable * symbolTable, Tree * programLocations) {
 	if(!parseTreeIsNull(programLocations)) {
-		Iterator * iterator = iteratorInit(treeGetChildren(programLocations));
+		Iterator * iterator = linkedListIteratorInit(treeGetChildren(programLocations));
 		while(iteratorHasNext(iterator)) {
 			Tree * subProgram = (Tree *) iteratorGetNext(iterator);
 			int type = parseTreeGetType(subProgram);
@@ -130,7 +131,7 @@ static void checkFunction(SymbolTable * symbolTable, Tree * function) {
 		int lineDeclared = parseTreeGetLineNumberDeclared(function);
 		int lineIndexDeclared = parseTreeGetLineIndexDeclared(function);
 		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] FUNCTION \"%s\" defined at (%i,%i) does not always return a value. [TRACE: %s]\n", 
+		fprintf(stderr, "[ERROR] FUNCTION \"%s\" defined at (%i,%i) does not always return a value. [TRACE: %s]\n", 
 			function_name, lineDeclared, lineIndexDeclared, trace);
 		exit(1);
 	}
@@ -141,7 +142,7 @@ static bool checkStatements(SymbolTable * symbolTable, Tree * statements){
 	int numberOfStatements = 0;
 	bool statementReturned = false;
 	if(!parseTreeIsNull(statements)) {
-		Iterator * iterator = iteratorInit(treeGetChildren(statements));
+		Iterator * iterator = linkedListIteratorInit(treeGetChildren(statements));
 		while (iteratorHasNext(iterator)) {
 			Tree * statement = (Tree *) iteratorGetNext(iterator);
 			statementReturned = checkStatement(symbolTable, statement);
@@ -150,7 +151,7 @@ static bool checkStatements(SymbolTable * symbolTable, Tree * statements){
 				int lineDeclared = parseTreeGetLineNumberDeclared(statement);
 				int lineIndexDeclared = parseTreeGetLineIndexDeclared(statement);
 				char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-				printf("[ERROR] DEAD CODE (%i,%i). [TRACE: %s]\n", 
+				fprintf(stderr, "[ERROR] DEAD CODE (%i,%i). [TRACE: %s]\n", 
 					lineDeclared, lineIndexDeclared, trace);
 				exit(1);
 			}
@@ -222,7 +223,7 @@ static void checkConditionIsBoolean (SymbolTable * symbolTable, Tree * condition
 		int lineDeclared = parseTreeGetLineNumberDeclared(condition);
 		int lineIndexDeclared = parseTreeGetLineIndexDeclared(condition);
 		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] CONDITION is not of type BOOLEAN at (%i,%i). [TRACE: %s]\n", 
+		fprintf(stderr, "[ERROR] CONDITION is not of type BOOLEAN at (%i,%i). [TRACE: %s]\n", 
 			lineDeclared, lineIndexDeclared, trace);
 		exit(1);
 	}
@@ -240,7 +241,7 @@ static void checkExpressionIsVariableType(SymbolTable * symbolTable, Tree * expr
 		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] ASSIGNMENT of variable \"%s\" of type \"%s\" does not match left hand side type of \"%s\" at (%i,%i). [TRACE: %s]\n", 
+		fprintf(stderr, "[ERROR] ASSIGNMENT of variable \"%s\" of type \"%s\" does not match left hand side type of \"%s\" at (%i,%i). [TRACE: %s]\n", 
 			variableName, variableTypeString, expressionTypeString, lineDeclared, lineIndexDeclared, trace);
 		exit(1);
 	}
@@ -269,7 +270,7 @@ static bool checkAssignment(SymbolTable * symbolTable, Tree * assignmentStatemen
 		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] ASSIGNMENT of variable \"%s\" of type \"%s\" does not match left hand side type of \"%s\" at (%i,%i). [TRACE: %s]\n", 
+		fprintf(stderr, "[ERROR] ASSIGNMENT of variable \"%s\" of type \"%s\" does not match left hand side type of \"%s\" at (%i,%i). [TRACE: %s]\n", 
 			variableName, variableTypeString, expressionTypeString, lineDeclared, lineIndexDeclared, trace);
 		exit(1);
 	}
@@ -292,7 +293,7 @@ static void addVariables(SymbolTable * symbolTable, Tree * variableLocations) {
 	int numberOfVariables = 0;
 	if(!parseTreeIsNull(variableLocations)) {
 		int listSize = treeGetSize(variableLocations) / 2;
-		Iterator * iterator = iteratorInit(treeGetChildren(variableLocations));
+		Iterator * iterator = linkedListIteratorInit(treeGetChildren(variableLocations));
 		
 		for(int i = 0; i < listSize; i++) {
 
@@ -313,7 +314,7 @@ static void addVariables(SymbolTable * symbolTable, Tree * variableLocations) {
 					int lineDeclared = parseTreeGetLineNumberDeclared(typeTree);
 					int lineIndexDeclared = parseTreeGetLineIndexDeclared(typeTree);
 					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-					printf("[ERROR] ARRAY TYPE is declared with a lower bound (%i) that is greater than its upperbound (%i) at (%i,%i). [TRACE: %s]\n", 
+					fprintf(stderr, "[ERROR] ARRAY TYPE is declared with a lower bound (%i) that is greater than its upperbound (%i) at (%i,%i). [TRACE: %s]\n", 
 						lowerBound, upperBound, lineDeclared, lineIndexDeclared, trace);
 					exit(1);
 				}
@@ -323,7 +324,7 @@ static void addVariables(SymbolTable * symbolTable, Tree * variableLocations) {
 			}
 
 			int identifier_size = treeGetSize(identifier_list);
-			Iterator * identifier_iterator = iteratorInit(treeGetChildren(identifier_list));
+			Iterator * identifier_iterator = linkedListIteratorInit(treeGetChildren(identifier_list));
 			for(int j = 0; j < identifier_size; j++) {
 				Tree * identifier 	= (Tree *) iteratorGetNext(identifier_iterator);
 				char * variableName = parseTreeGetAttribute(identifier);
@@ -338,7 +339,7 @@ static void addVariables(SymbolTable * symbolTable, Tree * variableLocations) {
 					int lineDeclared = parseTreeGetLineNumberDeclared(identifier);
 					int lineIndexDeclared = parseTreeGetLineIndexDeclared(identifier);
 					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-					printf("[ERROR] VARIABLE \"%s\" at (%i,%i) is already declared at (%i,%i). [TRACE: %s]\n", 
+					fprintf(stderr, "[ERROR] VARIABLE \"%s\" at (%i,%i) is already declared at (%i,%i). [TRACE: %s]\n", 
 						variableName, lineDeclared, lineIndexDeclared, previousLineDeclared, previousLineIndexDeclared, trace);
 					exit(1);
 				}
@@ -357,7 +358,7 @@ static void addSubPrograms(SymbolTable * symbolTable, Tree * programLocations) {
 	int numberOfSubPrograms = 0;
 	if(!parseTreeIsNull(programLocations)) {
 		int listSize = treeGetSize(programLocations);
-		Iterator * iterator = iteratorInit(treeGetChildren(programLocations));
+		Iterator * iterator = linkedListIteratorInit(treeGetChildren(programLocations));
 		while(iteratorHasNext(iterator)){
 			Tree * sub_program = (Tree *) iteratorGetNext(iterator);
 			char * program_name = parseTreeGetAttribute(sub_program);
@@ -374,7 +375,7 @@ static void addSubPrograms(SymbolTable * symbolTable, Tree * programLocations) {
 				int lineDeclared = parseTreeGetLineNumberDeclared(sub_program);
 				int lineIndexDeclared = parseTreeGetLineIndexDeclared(sub_program);
 				char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-				printf("[ERROR] %s \"%s\" at (%i,%i) is already declared at (%i,%i). [TRACE: %s]\n", 
+				fprintf(stderr, "[ERROR] %s \"%s\" at (%i,%i) is already declared at (%i,%i). [TRACE: %s]\n", 
 					programTypeString, program_name, lineDeclared, lineIndexDeclared,  previousLineDeclared, previousLineIndexDeclared, trace);
 				exit(1);
 			}
@@ -411,7 +412,7 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 			int lineDeclared = parseTreeGetLineNumberDeclared(subProgram);
 			int lineIndexDeclared = parseTreeGetLineIndexDeclared(subProgram);
 			char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-			printf("[ERROR] %s \"%s\" was called at (%i,%i), but was never declared. [TRACE: %s]\n", 
+			fprintf(stderr, "[ERROR] %s \"%s\" was called at (%i,%i), but was never declared. [TRACE: %s]\n", 
 				programTypeString, program_name, lineDeclared, lineIndexDeclared, trace);
 			exit(1);
 		}
@@ -425,14 +426,14 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 			int lineDeclared = parseTreeGetLineNumberDeclared(subProgram);
 			int lineIndexDeclared = parseTreeGetLineIndexDeclared(subProgram);
 			char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-			printf("[ERROR] \"%s\" procedure at (%i,%i) was called with no arguments. [TRACE: %s]\n",
+			fprintf(stderr, "[ERROR] \"%s\" procedure at (%i,%i) was called with no arguments. [TRACE: %s]\n",
 				program_name, lineDeclared, lineIndexDeclared, trace);
 			exit(1); 
 		}
 		if(actualType == READ_PROCEDURE_ID) {
 			
 			Tree * expressionList = (Tree *) treeGetChild(subProgram, 0);
-			Iterator * iterator = iteratorInit(treeGetChildren(expressionList));
+			Iterator * iterator = linkedListIteratorInit(treeGetChildren(expressionList));
 			
 			int i = 1;
 			while(iteratorHasNext(iterator)) {
@@ -442,7 +443,7 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 					int lineDeclared = parseTreeGetLineNumberDeclared(item);
 					int lineIndexDeclared = parseTreeGetLineIndexDeclared(item);
 					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-					printf("[ERROR] Argument %i of the \"read\" procedure did not take in a variable name at (%i,%i). [TRACE: %s]\n",
+					fprintf(stderr, "[ERROR] Argument %i of the \"read\" procedure did not take in a variable name at (%i,%i). [TRACE: %s]\n",
 						i, lineDeclared, lineIndexDeclared, trace);
 					exit(1);
 				}
@@ -462,7 +463,7 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 						int lineDeclared = parseTreeGetLineNumberDeclared(item);
 						int lineIndexDeclared = parseTreeGetLineIndexDeclared(item);
 						char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-						printf("[ERROR] ARRAY \"%s\" defined at (%i,%i) was used as a argument (%i) to a \"read\" procedure at (%i,%i). [TRACE: %s]\n", 
+						fprintf(stderr, "[ERROR] ARRAY \"%s\" defined at (%i,%i) was used as a argument (%i) to a \"read\" procedure at (%i,%i). [TRACE: %s]\n", 
 							variableName,  previousLineDeclared, previousLineIndexDeclared, i, lineDeclared, lineIndexDeclared, trace);
 						exit(1);
 					}
@@ -493,7 +494,7 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 		int lineDeclared = parseTreeGetLineNumberDeclared(subProgram);
 		int lineIndexDeclared = parseTreeGetLineIndexDeclared(subProgram);
 		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] %s \"%s\" defined at (%i,%i) was called as a %s at (%i,%i). [TRACE: %s]\n", 
+		fprintf(stderr, "[ERROR] %s \"%s\" defined at (%i,%i) was called as a %s at (%i,%i). [TRACE: %s]\n", 
 			actualProgramTypeString, program_name, previousLineDeclared, previousLineIndexDeclared, programTypeString, lineDeclared, lineIndexDeclared, trace);
 		exit(1);
 	}
@@ -514,16 +515,16 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 				char * actualProgramTypeString = lexConstantToString(actualType);
 				actualProgramTypeString = stringTakeLast(actualProgramTypeString, 2);
 				char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-				printf("[ERROR] %s \"%s\" defined at (%i,%i) was called with %i arguments when it should have %i parameters at (%i,%i). [TRACE: %s]\n", 
+				fprintf(stderr, "[ERROR] %s \"%s\" defined at (%i,%i) was called with %i arguments when it should have %i parameters at (%i,%i). [TRACE: %s]\n", 
 				actualProgramTypeString, program_name, previousLineDeclared, previousLineIndexDeclared, numberOfArguments, numberOfParameters, lineDeclared, lineIndexDeclared, trace);
 				exit(1);
 			}
-			Iterator * parameterTypeIterator = iteratorInit(treeGetChildren(parameters));
+			Iterator * parameterTypeIterator = linkedListIteratorInit(treeGetChildren(parameters));
 			Tree * identifierList = iteratorGetNext(parameterTypeIterator);
 			Tree * identifierType = iteratorGetNext(parameterTypeIterator);
-			Iterator * parameterValueIterator = iteratorInit(treeGetChildren(identifierList));
+			Iterator * parameterValueIterator = linkedListIteratorInit(treeGetChildren(identifierList));
 
-			Iterator * argumentIterator = iteratorInit(treeGetChildren(expressionList));
+			Iterator * argumentIterator = linkedListIteratorInit(treeGetChildren(expressionList));
 			
 			int currentParameterType = parseTreeGetType(identifierType);
 
@@ -533,7 +534,7 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 					identifierList = iteratorGetNext(parameterTypeIterator);
 					identifierType = iteratorGetNext(parameterTypeIterator);
 					iteratorDestroy(parameterValueIterator);
-					parameterValueIterator = iteratorInit(treeGetChildren(identifierList));
+					parameterValueIterator = linkedListIteratorInit(treeGetChildren(identifierList));
 					currentParameterType = parseTreeGetType(identifierType);
 				}
 
@@ -549,7 +550,7 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 						char * actualProgramTypeString = lexConstantToString(actualType);
 						actualProgramTypeString = stringTakeLast(actualProgramTypeString, 2);
 						char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-						printf("[ERROR] %s \"%s\" defined at (%i,%i) was called having argument %i not being of type ARRAY at (%i,%i). [TRACE: %s]\n", 
+						fprintf(stderr, "[ERROR] %s \"%s\" defined at (%i,%i) was called having argument %i not being of type ARRAY at (%i,%i). [TRACE: %s]\n", 
 						actualProgramTypeString, program_name, previousLineDeclared, previousLineIndexDeclared, currentArgumentIndex, lineDeclared, lineIndexDeclared, trace);
 						exit(1);
 					}
@@ -569,7 +570,7 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 						char * actualProgramTypeString = lexConstantToString(actualType);
 						actualProgramTypeString = stringTakeLast(actualProgramTypeString, 2);
 						char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-						printf("[ERROR] %s \"%s\" defined at (%i,%i) was called having argument %i being of type %s when it is expected to have type %s at (%i,%i). [TRACE: %s]\n", 
+						fprintf(stderr, "[ERROR] %s \"%s\" defined at (%i,%i) was called having argument %i being of type %s when it is expected to have type %s at (%i,%i). [TRACE: %s]\n", 
 						actualProgramTypeString, program_name, previousLineDeclared, previousLineIndexDeclared, currentArgumentIndex, actualTypeString, expectedTypeString, lineDeclared, lineIndexDeclared, trace);
 						exit(1);
 					}
@@ -591,7 +592,7 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 
 		} else {
 
-			Iterator * argumentIterator = iteratorInit(treeGetChildren(expressionList));
+			Iterator * argumentIterator = linkedListIteratorInit(treeGetChildren(expressionList));
 
 			while (iteratorHasNext(argumentIterator)) {
 				Tree * argument = iteratorGetNext(argumentIterator);
@@ -614,7 +615,7 @@ static int checkSubProgramName( SymbolTable * symbolTable, Tree * subProgram, in
 			char * actualProgramTypeString = lexConstantToString(actualType);
 			actualProgramTypeString = stringTakeLast(actualProgramTypeString, 2);
 			char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-			printf("[ERROR] %s \"%s\" defined at (%i,%i) was called with no arguments when it should have %i parameters at (%i,%i). [TRACE: %s]\n", 
+			fprintf(stderr, "[ERROR] %s \"%s\" defined at (%i,%i) was called with no arguments when it should have %i parameters at (%i,%i). [TRACE: %s]\n", 
 			actualProgramTypeString, program_name, previousLineDeclared, previousLineIndexDeclared, numberOfParameters, lineDeclared, lineIndexDeclared, trace);
 			exit(1);
 		} 
@@ -697,7 +698,7 @@ static int checkExpression(SymbolTable * symbolTable, Tree * expression) {
 				int lineDeclared = parseTreeGetLineNumberDeclared(expression);
 				int lineIndexDeclared = parseTreeGetLineIndexDeclared(expression);
 				char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-				printf("[ERROR] OPERATOR \"NOT\" is not defined with operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
+				fprintf(stderr, "[ERROR] OPERATOR \"NOT\" is not defined with operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
 					 typeString, lineDeclared, lineIndexDeclared, trace);
 				exit(1);
 			}
@@ -723,7 +724,7 @@ static int checkExpression(SymbolTable * symbolTable, Tree * expression) {
 					int lineDeclared = parseTreeGetLineNumberDeclared(expression);
 					int lineIndexDeclared = parseTreeGetLineIndexDeclared(expression);
 					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-					printf("[ERROR] OPERATOR \"%s\" is not defined with having a left side operand of type \"%s\" and a right side operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
+					fprintf(stderr, "[ERROR] OPERATOR \"%s\" is not defined with having a left side operand of type \"%s\" and a right side operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
 						 expressionOperatorString, leftTypeString, rightTypeString, lineDeclared, lineIndexDeclared, trace);
 					exit(1);
 				}
@@ -736,7 +737,7 @@ static int checkExpression(SymbolTable * symbolTable, Tree * expression) {
 					int lineDeclared = parseTreeGetLineNumberDeclared(expression);
 					int lineIndexDeclared = parseTreeGetLineIndexDeclared(expression);
 					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-					printf("[ERROR] OPERATOR \"%s\" is not defined with having a left side operand of type \"%s\" and a right side operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
+					fprintf(stderr, "[ERROR] OPERATOR \"%s\" is not defined with having a left side operand of type \"%s\" and a right side operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
 						 expressionOperatorString, leftTypeString, rightTypeString, lineDeclared, lineIndexDeclared, trace);
 					exit(1);
 				}
@@ -752,7 +753,7 @@ static int checkExpression(SymbolTable * symbolTable, Tree * expression) {
 						int lineDeclared = parseTreeGetLineNumberDeclared(expression);
 						int lineIndexDeclared = parseTreeGetLineIndexDeclared(expression);
 						char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-						printf("[ERROR] OPERATOR \"%s\" is not defined with having a left side operand of type \"%s\" and a right side operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
+						fprintf(stderr, "[ERROR] OPERATOR \"%s\" is not defined with having a left side operand of type \"%s\" and a right side operand of type \"%s\" at (%i,%i). [TRACE: %s]\n", 
 							 expressionOperatorString, leftTypeString, rightTypeString, lineDeclared, lineIndexDeclared, trace);
 						exit(1);
 					}
@@ -808,7 +809,7 @@ static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool si
 					int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 					int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-					printf("[ERROR] PROCEDURE \"%s\" defined at (%i,%i) it attempting to RETURN a value at (%i,%i). [TRACE: %s]\n", 
+					fprintf(stderr, "[ERROR] PROCEDURE \"%s\" defined at (%i,%i) it attempting to RETURN a value at (%i,%i). [TRACE: %s]\n", 
 						variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
 					exit(1);
 				}
@@ -819,7 +820,7 @@ static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool si
 					int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 					int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 					char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-					printf("[ERROR] FUNCTION \"%s\" defined at (%i,%i) has its RETURN VARIABLE indexed as a ARRAY at (%i,%i). [TRACE: %s]\n", 
+					fprintf(stderr, "[ERROR] FUNCTION \"%s\" defined at (%i,%i) has its RETURN VARIABLE indexed as a ARRAY at (%i,%i). [TRACE: %s]\n", 
 						variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
 					exit(1);
 				}
@@ -833,7 +834,7 @@ static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool si
 		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] VARIABLE \"%s\" was referenced at (%i,%i), but was never declared. [TRACE: %s]\n", 
+		fprintf(stderr, "[ERROR] VARIABLE \"%s\" was referenced at (%i,%i), but was never declared. [TRACE: %s]\n", 
 			 variable_name, lineDeclared, lineIndexDeclared, trace);
 		exit(1);
 	}
@@ -849,7 +850,7 @@ static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool si
 		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] %s \"%s\" defined at (%i,%i) was referenced as a VARIABLE at (%i,%i). [TRACE: %s]\n", 
+		fprintf(stderr, "[ERROR] %s \"%s\" defined at (%i,%i) was referenced as a VARIABLE at (%i,%i). [TRACE: %s]\n", 
 			actualProgramTypeString, variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
 		exit(1);
 	}
@@ -864,7 +865,7 @@ static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool si
 		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] NON-ARRAY VARIABLE \"%s\" declared at (%i,%i) is being called where an array should be present at (%i,%i). [TRACE: %s]\n", 
+		fprintf(stderr, "[ERROR] NON-ARRAY VARIABLE \"%s\" declared at (%i,%i) is being called where an array should be present at (%i,%i). [TRACE: %s]\n", 
 			variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
 		exit(1);
 	}
@@ -876,7 +877,7 @@ static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool si
 		int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 		int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 		char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-		printf("[ERROR] NON-ARRAY VARIABLE \"%s\" defined at (%i,%i) was referenced as a ARRAY at (%i,%i). [TRACE: %s]\n", 
+		fprintf(stderr, "[ERROR] NON-ARRAY VARIABLE \"%s\" defined at (%i,%i) was referenced as a ARRAY at (%i,%i). [TRACE: %s]\n", 
 			variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
 		exit(1);
 	} else if ( type == LL_ARRAY && treeIsLeaf(variable) ) { // type is an array, but the whole array is called
@@ -887,7 +888,7 @@ static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool si
 			int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 			int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 			char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-			printf("[ERROR] ARRAY VARIABLE \"%s\" defined at (%i,%i) was referenced as a WHOLE ARRAY when it shouldn't have at (%i,%i). [TRACE: %s]\n", 
+			fprintf(stderr, "[ERROR] ARRAY VARIABLE \"%s\" defined at (%i,%i) was referenced as a WHOLE ARRAY when it shouldn't have at (%i,%i). [TRACE: %s]\n", 
 				variable_name, previousLineDeclared, previousLineIndexDeclared, lineDeclared, lineIndexDeclared, trace);
 			exit(1);
 		} else {
@@ -904,7 +905,7 @@ static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool si
 				int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 				int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 				char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-				printf("[ERROR] At (%i,%i), ARRAY \"%s\" of type \"%s\" does not match the expected ARRAY type \"%s\" at (%i,%i). [TRACE: %s]\n", 
+				fprintf(stderr, "[ERROR] At (%i,%i), ARRAY \"%s\" of type \"%s\" does not match the expected ARRAY type \"%s\" at (%i,%i). [TRACE: %s]\n", 
 					lineDeclared, lineIndexDeclared, variable_name, actualTypeString, expectedTypeString, previousLineDeclared, previousLineIndexDeclared, trace);
 				exit(1);
 			}
@@ -925,7 +926,7 @@ static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool si
 				int lineDeclared = parseTreeGetLineNumberDeclared(variable);
 				int lineIndexDeclared = parseTreeGetLineIndexDeclared(variable);
 				char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-				printf("[ERROR] At (%i,%i), ARRAY BOUNDS of \"%s\" (%i to %i) does not match the expected ARRAY BOUNDS (%i to %i) at (%i,%i). [TRACE: %s]\n", 
+				fprintf(stderr, "[ERROR] At (%i,%i), ARRAY BOUNDS of \"%s\" (%i to %i) does not match the expected ARRAY BOUNDS (%i to %i) at (%i,%i). [TRACE: %s]\n", 
 					lineDeclared, lineIndexDeclared, variable_name, actualLowerBound, actualUpperBound, lowerBound, upperBound, previousLineDeclared, previousLineIndexDeclared, trace);
 				exit(1);
 			}
@@ -944,7 +945,7 @@ static int checkVariableName(SymbolTable * symbolTable, Tree * variable, bool si
 			int lineDeclared = parseTreeGetLineNumberDeclared(index);
 			int lineIndexDeclared = parseTreeGetLineIndexDeclared(index);
 			char * trace = symbolTableScopeTraceString(symbolTable, &tracePrintProperties);
-			printf("[ERROR] VARIABLE ARRAY \"%s\" declared at (%i,%i) was indexed with a NON-INTEGER value (%s) at (%i,%i). [TRACE: %s]\n", 
+			fprintf(stderr, "[ERROR] VARIABLE ARRAY \"%s\" declared at (%i,%i) was indexed with a NON-INTEGER value (%s) at (%i,%i). [TRACE: %s]\n", 
 				 variable_name, previousLineDeclared, previousLineIndexDeclared, indexTypeString, lineDeclared, lineIndexDeclared, trace);
 			exit(1);
 		}

@@ -10,13 +10,13 @@ typedef struct ObjectType ObjectType ;
 extern ObjectType CHAR_OBJECT, STRING_OBJECT, INT_OBJECT;
 
 
-typedef char* ToStringFunction(ObjectType * objectType, void * value);
-typedef void Destructor (ObjectType * objectType, void * value);
-typedef int CompareFunction (ObjectType * objectType, void * value1, void * value2);
+typedef char* ObjectTypeToStringFunction(ObjectType * objectType, void * value);
+typedef void ObjectTypeDestructor (ObjectType * objectType, void * value);
+typedef int ObjectTypeCompareFunction (ObjectType * objectType, void * value1, void * value2);
 
 
-ObjectType * objectTypeInit(ToStringFunction * toStringFunction, CompareFunction * compareFunction, Destructor * destructor);
-ObjectType * objectTypePropertiesNestedInit(ToStringFunction * toStringFunction, CompareFunction * compareFunction, Destructor * destructor, int nestedTypesSize, int numProperties, ...);
+ObjectType * objectTypeInit(ObjectTypeToStringFunction * toStringFunction, ObjectTypeCompareFunction * compareFunction, ObjectTypeDestructor * destructor);
+ObjectType * objectTypePropertiesNestedInit(ObjectTypeToStringFunction * toStringFunction, ObjectTypeCompareFunction * compareFunction, ObjectTypeDestructor * destructor, int nestedTypesSize, int numProperties, ...);
 void objectTypeDestroyTypeOnly(ObjectType * objectType);
 void objectTypeDestroyValue(ObjectType * objectType, void * value);
 void objectTypePrintValue(ObjectType * objectType, void * value);
