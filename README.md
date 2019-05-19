@@ -81,16 +81,16 @@ List of  (nonterminals) used for Gramma:
 | --- | --- |
 | program | L\_PROGRAM  L\_ID  L\_LP  identifier\_list   L\_RP     L\_SC   declarations  subprogram\_declarations  compound\_statement  L\_D |
 | identifier\_list | L\_ID <br> \|   identifier\_list   L\_COM   L\_ID |
-| declarations | $\epsilon$ <br> \| declarations   L\_VAR  identifier\_list   L\_C type   L\_SC |	
+| declarations | epsilon <br> \| declarations   L\_VAR  identifier\_list   L\_C type   L\_SC |	
 | type | standard\_type <br> \|   L\_ARRAY   L\_LB    L\_NUM    L\_DD    L\_NUM    L\_RB   L\_OF   standard\_type |
 | standard\_type | L\_INTEGER  <br>  \|  L\_REAL |
-| subprogram\_declarations | $\epsilon$ <br> \|  subprogram\_declarations   subprogram\_declaration   L\_SC |
+| subprogram\_declarations | epsilon <br> \|  subprogram\_declarations   subprogram\_declaration   L\_SC |
 | subprogram\_declaration | subprogram\_head  declarations  subprogram\_declarations  compound\_statement |  
 | subprogram\_head | L\_FUNCTION  L\_ID  arguments  L\_C  standard\_type  L\_SC  <br> \|  L\_PROCEDURE    L\_ID    arguments   L\_SC	|
-| arguments | $\epsilon$  <br> \|  L\_LP    parameter\_list    L\_RP | 
+| arguments | epsilon  <br> \|  L\_LP    parameter\_list    L\_RP | 
 | parameter\_list | identifier\_list   L\_C   type  <br> \|  parameter\_list    L\_SC    identifier\_list   L\_C   type |  
 | compound\_statement | L\_BEGIN    optional\_statements    L\_END | 
-| optional\_statements | $\epsilon$  <br> \|  statement\_list |
+| optional\_statements | epsilon  <br> \|  statement\_list |
 | statement\_list | statement  <br> \|  statement\_list    L\_SC    statement |
 | statement | matched\_stmt  <br> \|  unmatched\_stmt |
 | matched\_stmt | L\_IF expression   L\_THEN   matched\_stmt   L\_ELSE   matched\_stmt  <br> \|  variable  L\_ASSIGNOP  expression  <br> \|  procedure\_statement  <br> \|  compound\_statement  <br> \|  L\_WHILE  expression  L\_DO  statement  <br> \|  L\_FOR  L\_ID  L\_ASSIGNOP  expression  L\_TO  expression  L\_DO  statement |
