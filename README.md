@@ -118,7 +118,7 @@ The compiler is finally ready to generate assembly source code after it successf
 The follow table shows the stack arrangement used the a procedure/function call:
 
  | Stack for procedure/function call with N size parameters, M local variables, and S temporary registers | Address Significance |
- | ... | |
+ | ... | ... |
  |  temporary register S  | |
  |  :  | |
  |  temporary register 1  | |
