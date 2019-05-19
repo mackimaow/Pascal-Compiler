@@ -24,9 +24,10 @@ Massimiliano Cutugno
 
 
 
-##Design Document
+## Design Document
 
-###Lexical Analyzer
+### Lexical Analyzer
+
 	The first stage of the compiler is the lexical analyzer. This takes the input source code and translates it into stream of tokens with their corresponding attributes. The compiler used “lex” as the lexical analyzer to tokenize the input source code. The following tokens were used to do this task:
 
 List of tokens (terminals symbols) used for grammar:
@@ -72,7 +73,8 @@ List of tokens (terminals symbols) used for grammar:
 | comments | \\(\\\*(.\|\\n)\*\\\*\\)\|\\/\\/.\* | Comments (single and multiple line) are filtered out at lexical stage |
 | EOL | \\n | Represents a new line |
 
- ###Parser (Syntax Analyzer)
+ ### Parser (Syntax Analyzer)
+ 
 	After the input source code is processed by the lexical analyzer (if the input does not contain any unrecognized characters) the parser constructs a parse tree. The compiler used “yacc” to build the syntax analyzer in c. The context free grammar used for this parser is listed below as a sequence of nonterminal definitions. It is worth noting that the grammer’s starting non-terminal is “program”. Furthermore, to rid of the dangling else ambiguous grammar, two additional non-terminal types (matched_stmt and unmatched_stmt) had to be constructed.
 
 List of  (nonterminals) used for Gramma:
