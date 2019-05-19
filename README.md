@@ -104,7 +104,7 @@ List of  (nonterminals) used for Gramma:
 | factor | variable  <br> \|  L\_ID    L\_LP   expression\_list   L\_RP  <br> \|  L\_NUM  <br> \|  L\_LP   expression   L\_RP  <br> \|  L\_NOT   factor |
 
 ### Semantic Analyzer
-After the constructing the parse tree from the specified grammer, the compiler then proceeds to check the semantics of the program. This is done in separate c file “semantic_analyzer.c”. The semantic analyzer will halt and exit the compilation if any of the following rules are broken:
+After the constructing the parse tree from the specified grammer, the compiler then proceeds to check the semantics of the program. This is done in separate c file “semantic\_analyzer.c”. The semantic analyzer will halt and exit the compilation if any of the following rules are broken:
 - A function must not be left without returning a value
 - A function returns a value and must not leave dead code behind (code that is never reached because of the function return blocks it)
 - The conditions for if statements and while statements must be of type boolean
@@ -125,3 +125,20 @@ After the constructing the parse tree from the specified grammer, the compiler t
 - Cannot mismatch function/procedure/variable names with another another
 - An array passed though as a parameter to a function is allowed, but must have the same declared upper bound and lower bound as the parameter type
 - NOTE: All indices of arrays are checked during runtime and not during compile time
+
+### Code Generation
+The compiler is finally ready to generate assembly source code after it successfully passes through the semantic analyzer stage with no violations of specified rules. This compiler then generates x86 assembly code (intel syntax). The code generated can be then executed after the user installs nasm (or any equivalent object compiler program that takes in x86 assembly code). There is only one expected type of error that could happen and is safely handled by stopping the execution of the program. This error occurs when the users decides to index a array which is out of the bounds of the array given. A segmented fault should never occur after executing the assembly code.
+The follow table shows the stack arrangement used the a procedure/function call:
+ | Stack for procedure/function call with N size parameters, M local variables, and S temporary registers |
+ | ... |
+ |  temporary register S  |
+ |  :  |
+ |  temporary register 1  |
+ |  local variable M  |
+ |  :  |
+ |  local variable 1  |
+ |  calling scope bsp  (current scope bsp points to this address)  |
+ |  return instruction address   |
+ |  parameter N  |
+ |  :  |
+ |  parameter 1  |
