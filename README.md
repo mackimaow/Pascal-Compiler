@@ -129,6 +129,7 @@ After the constructing the parse tree from the specified grammer, the compiler t
 ### Code Generation
 The compiler is finally ready to generate assembly source code after it successfully passes through the semantic analyzer stage with no violations of specified rules. This compiler then generates x86 assembly code (intel syntax). The code generated can be then executed after the user installs nasm (or any equivalent object compiler program that takes in x86 assembly code). There is only one expected type of error that could happen and is safely handled by stopping the execution of the program. This error occurs when the users decides to index a array which is out of the bounds of the array given. A segmented fault should never occur after executing the assembly code.
 The follow table shows the stack arrangement used the a procedure/function call:
+
  | Stack for procedure/function call with N size parameters, M local variables, and S temporary registers |
  | ... |
  |  temporary register S  |
