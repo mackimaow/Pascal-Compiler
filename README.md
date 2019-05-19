@@ -102,3 +102,26 @@ List of  (nonterminals) used for Gramma:
 | simple\_expression | term  <br> \| L\_SUB   term  <br> \| simple\_expression   L\_ADD  term  <br> \| simple\_expression  L\_SUB  term  <br> \| simple\_expression  L\_OR  term |
 | term | factor  <br> \|  term   L\_MULOP   factor |
 | factor | variable  <br> \|  L\_ID    L\_LP   expression\_list   L\_RP  <br> \|  L\_NUM  <br> \|  L\_LP   expression   L\_RP  <br> \|  L\_NOT   factor |
+
+### Semantic Analyzer
+After the constructing the parse tree from the specified grammer, the compiler then proceeds to check the semantics of the program. This is done in separate c file “semantic_analyzer.c”. The semantic analyzer will halt and exit the compilation if any of the following rules are broken:
+- A function must not be left without returning a value
+- A function returns a value and must not leave dead code behind (code that is never reached because of the function return blocks it)
+- The conditions for if statements and while statements must be of type boolean
+- A assignment of variable must have its left hand side match the right hand side when expression is computed
+- Assignment of a whole array to another whole array is not allowed
+- An array must have its upper bound be greater than its lower bound
+- A declaration of a variable/function/procedure in a scope must not have the same name as any other declared variables/functions/procedures within the scope (including parameters)
+- Within the function, any of its local functions/procedures/variables within scope should not have the same name as the the function name
+- A function is never allowed to access variables/procedures/functions outside of its scope (except for accessing itself for recursion)
+- The write procedure can take in any number of arguments, however must take in at least one argument
+- Functions must not ever be directly used as a statement and must be accessed where a expression is present
+- Procedures must not be used within a expression and must be called as a single statement
+- Functions/procedures/variables cannot be used if not previously declared
+- Functions and procedures must be called with the right arguments types and the write number of arguments
+- Expressions must be acted on a single type (even implicitly declared boolean types by the use of relational operators). Also note that compile time constants are casted to either a real or a integer. 
+- Functions, when used in a expression, must have its return type be the same as operand types also within the expression
+- The logical AND, OR, and NOT operations must act on implicit boolean types, while all other operations must act on the types specified by the operands.
+- Cannot mismatch function/procedure/variable names with another another
+- An array passed though as a parameter to a function is allowed, but must have the same declared upper bound and lower bound as the parameter type
+- NOTE: All indices of arrays are checked during runtime and not during compile time
