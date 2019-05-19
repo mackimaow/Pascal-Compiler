@@ -2,7 +2,9 @@
 
 Compiler Haiku:
 
-> Compile Pascal[space][space]Segmented fault occurred[space][space]Compile Pascal
+> Compile Pascal  
+Segmented fault occurred  
+Compile Pascal
 
 by
 Massimiliano Cutugno
