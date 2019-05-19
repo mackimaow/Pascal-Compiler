@@ -55,21 +55,21 @@ List of tokens (terminals symbols) used for grammar
  L_ADD | add | Used to add two reals or two integer types 
  L_SUB | sub | Used to subtract two reals or two integer types or negate integer or real types 
  L_OR | or | Used to take the logical OR of implicit boolean types 
- L_MULOP | [*/]|div|mod|and | These are multiply,divide,modulus, and logical AND operators (respectively) that are computed with the same precedence 
- L_RELOP | =|\<\>|\<|\<=|\>=|\> | These are relational operators (equal to, not equal to, less than, less than or equal to, greater than or equal to, greater than respectively) with the same precedence 
+ L_MULOP | [*/]\|div\|mod\|and | These are multiply,divide,modulus, and logical AND operators (respectively) that are computed with the same precedence 
+ L_RELOP | =\|\\<\\>\|\\<\|\\<=\|\\>=\|\\> | These are relational operators (equal to, not equal to, less than, less than or equal to, greater than or equal to, greater than respectively) with the same precedence 
  L_ASSIGNOP | := | Used to assign a value to a variable 
- L_ID | [a-zA-Z]([a-zA-Z]|[0-9])* | This is an user defined name for defining functions/procedures/programs and variables 
- L_NUM | [0-9]+(E[+-]?[0-9]+)? | This is used to represent a number 
+ L_ID | \[a-zA-Z\](\[a-zA-Z\]\|\[0-9\])* | This is an user defined name for defining functions/procedures/programs and variables 
+ L_NUM | \[0-9\]+(E\[+-\]?\[0-9\]+)? | This is used to represent a number 
  L_LP | ( | Represents a left parentheses 
  L_RP | ) | Represents a right parentheses 
  L_LB | [ | Represents a left bracket 
  L_RB | ] | Represents a right bracket 
- L_DD | \.\. | Used with array declarations 
- L_D | \. | Used to end a program 
+ L_DD | \\.\\. | Used with array declarations 
+ L_D | \\. | Used to end a program 
  L_COM | , |  Represents a comma 
- L_SC | ; | Represents a semicolon 
+  L_SC | ; | Represents a semicolon 
  L_C | : | Represents a colon 
- spaces | [ \t]+ | Spaces are filtered out at lexical stage 
- comments | \(\*(.|\n)*\*\)|\/\/.* | Comments (single and multiple line) are filtered out at lexical stage 
- EOL | \n | Represents a new line 
+ spaces | \[ \t\]+ | Spaces are filtered out at lexical stage 
+ comments | \\(\\\*(.\|\\n)\*\\\*\\)\|\\/\\/.\* | Comments (single and multiple line) are filtered out at lexical stage 
+ EOL | \\n | Represents a new line 
 
