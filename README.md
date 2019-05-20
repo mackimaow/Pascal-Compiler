@@ -190,7 +190,8 @@ The compiler was tested against its specifications to determine if there are any
 
 ### Program 1 
 \[Testing greatest common denominator function with 345 and 678 (should compile and run normally as expected)\]
-''' pascal
+
+```pascal
 
 program example(input, output);
 	var x:  integer;
@@ -204,5 +205,5 @@ begin
 	write(x)
 end.
 
-'''
+```
 
