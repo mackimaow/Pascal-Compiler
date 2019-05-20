@@ -117,16 +117,16 @@ The compiler is finally ready to generate assembly source code after it successf
 
 The follow table shows the stack arrangement used the a procedure/function call:
 
- | Stack for procedure/function call with N size parameters, M local variables, and S temporary registers | Address Significance |
- | ... | ... |
- |  temporary register S  | |
- |  :  | |
- |  temporary register 1  | |
- |  local variable M  | |
- |  :  | |
- |  local variable 1  | |
- |  calling scope bsp  | current scope bsp points to this address |
- |  return instruction address   | |
- |  parameter N  | |
- |  :  | |
- |  parameter 1  | |
+ | Stack |
+ | :---: |
+ |  temporary register S  | 
+ | : <br> : | 
+ |  temporary register 1  | 
+ |  local variable M  | 
+ |  : <br> :  | 
+ |  local variable 1  | 
+ |  calling scope bsp   (current scope bsp points to this address) |
+ |  return instruction address   | 
+ |  parameter N  | 
+ |  : <br> :  | 
+ |  parameter 1  |
