@@ -189,7 +189,7 @@ The pascal compiler presented in this report is not complete; there are a few li
 The compiler was tested against its specifications to determine if there are any overall problems to be fixed. Each section below shows a pascal source file with its output result. If a error is expected, the description will rightful mention this.
 
 ### Program 1 
-\[Testing greatest common denominator function with 345 and 678 (should compile and run normally as expected)\]
+Testing greatest common denominator function with 345 and 678 (should compile and run normally as expected)
 #### Source
 ```pascal
 program example(input, output);
@@ -208,7 +208,7 @@ end.
 > 3
 
 ### Program 2
-\[Storing the function range of x^2 in a array from 3 to 10 then printing the result (should compile and run normally as expected)\]
+Storing the function range of x^2 in a array from 3 to 10 then printing the result (should compile and run normally as expected)
 
 #### Source
 ```pascal
@@ -229,8 +229,23 @@ end.
 25  
 36  
 49  
-64
-81
+64  
+81  
 100
 
+### Program 3
+Attempting to index a array that is out of bounds (should compile and but give a runtime error)
+
+#### Source
+```pascal
+program example(input, output);
+	var x:  integer;
+	var someArray : array [ 3 .. 10 ] of integer ; 
+begin
+	x:=2;
+	someArray[x] := 100
+end.
+```
+#### Output
+> \[ERROR\] ARRAY "someArray" is indexed at 2 which is less than the lower bound of 3 at (6,2) \[TRACE: example\]
 
