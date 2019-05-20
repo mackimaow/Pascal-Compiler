@@ -6,10 +6,12 @@ Compiler Haiku:
 Segmented fault occurred  
 Compile Pascal
 
-by
+by <br>
 Massimiliano Cutugno
-<br>
-This pascal compiler generates source code into x86 assembly code (intel syntax).
+<br><br>
+This pascal compiler (written in C with Lex and Yacc Tools) generates source code into x86 assembly code (intel syntax). <br><br>
+Please go to the user manual section to see how to use the compiler
+
 
 ## Design Document
 
@@ -146,7 +148,7 @@ The following table shows the stack arrangement used for a procedure/function ca
 
 ## User Manual
 
-To compile the user source code for pascal, one should first compile the source code for the compiler using the make file within the project directory. This is done by executing the following command:
+To compile the user source code for pascal, one should first compile the source code for the compiler using the make file within the project directory. It is worth noting that "gcc", "lex", and "yacc" are all dependenacies and must be downloaded in order to build the compiler from the source presented in this repository. After this is done, the source can be compiled to x86 intel assembly by executing the following command:
 > make all
 
 Alternatively, one could use the following command:
@@ -180,8 +182,27 @@ This should run the assembly program that the pascal source code represents.
 
 ## Status Report
 
-The pascal compiler presented in this report is not complete; there are a few limitations and caveats as well as unique features. Firstly, the parameters specified in the program definition has no functionality yet. Therefore using “input” or “output” within the program parameters effectively does not add input or output features to the pascal source code. However, it is worth noting that is still possible to use the “write” function (with one or more arguments) to print a result to standard out. Furthermore, it is not possible to read from standard in due to segmented fault errors when executing the assembly source code. The semantic analyzer will not throw any errors when the user proceeds to use the read from standard in, but the assembly code will skip over this action when executed to prevent the segmented fault. The compiler also does not handle floating point numbers, (so there is no difference between real types and integer types). However, a unique feature to this compiler is that the user is able to enter a number in scientific notation to declare a number wherever is appropriate.
+The pascal compiler presented in this report is not complete; there are a few limitations and caveats as well as unique features. Firstly, the parameters specified in the program definition has no functionality yet. Therefore using “input” or “output” within the program parameters effectively does not add input or output features to the pascal source code. However, it is worth noting that is still possible to use the “write” and "read" functions (with one or more arguments) to print/read a result to standard out/in. The compiler also does not handle floating point numbers, (so there is no difference between real types and integer types). However, a unique feature to this compiler is that the user is able to enter a number in scientific notation to declare a number wherever is appropriate.
   
 ## Testing Report
 
 The compiler was tested against its specifications to determine if there are any overall problems to be fixed. Each section below shows a pascal source file with its output result. If a error is expected, the description will rightful mention this.
+
+### Program 1 
+\[Testing greatest common denominator function with 345 and 678 (should compile and run normally as expected)\]
+''' pascal
+
+program example(input, output);
+	var x:  integer;
+	function gcd(a, b: integer): integer;
+	begin
+	   if b = 0 then gcd := a;
+	   gcd := gcd(b, a mod b)
+	end;
+begin
+	x := gcd(345, 678);
+	write(x)
+end.
+
+'''
+
