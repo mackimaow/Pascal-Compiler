@@ -8,7 +8,8 @@ Compile Pascal
 
 by
 Massimiliano Cutugno
-
+<br>
+This pascal compiler generates source code into x86 assembly code (intel syntax).
 
 ## Design Document
 
@@ -147,22 +148,34 @@ The following table shows the stack arrangement used for a procedure/function ca
 
 To compile the user source code for pascal, one should first compile the source code for the compiler using the make file within the project directory. This is done by executing the following command:
 > make all
+
 Alternatively, one could use the following command:
 > make pcc
+
 After this is executed, the pascal compiler is ready to compile the source code for pascal program. There are a few options for compiling the source code. One is directly passing the input though piping or redirecting input:
-	> cat \[pascal_source_code\] \| ./pcc
+> cat \[pascal_source_code\] \| ./pcc
+	
 This will however print the source code to the standard output. To redirect the output to the a filename, one should use the ‘-o’ option with a output file name like below:
-	> cat \[pascal_source_code\] \| ./pcc -o \[outputfileName\]
+> cat \[pascal_source_code\] \| ./pcc -o \[outputfileName\]
+
 Furthermore, one could just specify the input file without redirection/piping like below:
-	> ./pcc \[pascal_source_code\] -o \[outputfileName\] 
-Any of these ways should generate the assembly code code in one way or another. It is worth noting that piping the output of the compiler is not a sufficient way to generating source code, as the compiler will attempt to print the lexical tokens, parse tree (both semantically unchecked and clean/checked trees) alongside the output assembly code. Therefore, one should not do the following:
- > ./pcc \[pascal_source_code\] \> \[outputfileName\]
+> ./pcc \[pascal_source_code\] -o \[outputfileName\]
+
+Any of these ways should generate the assembly code code in one way or another. It is worth noting that piping the output of the compiler is also sufficient way to generating source code, Therefore, one can do following:
+> ./pcc \[pascal_source_code\] \> \[outputfileName\]
+
 or 
-	 > ./pcc \[pascal_source_code\] \| \[other commands...\]
+> ./pcc \[pascal_source_code\] \| \[other commands...\]
+
+Furthermore, using the "-d" option with the pcc command will compile the input pascal souce file with debug mode enabled. More specifically, compiler will attempt to print the lexical tokens, parse tree (both semantically unchecked and clean/checked trees) alongside the output assembly code.
+
+
 To execute the assembly code, one should first install “nasm” to create a object file for the program. To do this on a ubuntu, one should first do the following:
-	> sudo apt-get install nasm
+> sudo apt-get install nasm
+
 After this is done, the assembly code can be executed by using the bash script “runAssembly” in the project directory. More specifically, one should do the following:
-	> ./runAssembly \[outputAssemblyFile\]
+> ./runAssembly \[outputAssemblyFile\]
+
 This should run the assembly program that the pascal source code represents.
 
 ## Status Report
