@@ -120,13 +120,13 @@ The follow table shows the stack arrangement used the a procedure/function call:
  | Stack |
  | :---: |
  |  temporary register S  | 
- | : <br>: | 
+ | : | 
  |  temporary register 1  | 
  |  local variable M  | 
- |  : <br>:  | 
+ | : | 
  |  local variable 1  | 
  |  calling scope bsp   (current scope bsp points to this address) |
  |  return instruction address   | 
  |  parameter N  | 
- |  : <br>:  | 
+ | : | 
  |  parameter 1  |
