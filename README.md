@@ -131,8 +131,7 @@ The following table shows the stack arrangement used for a procedure/function ca
  | : | 
  |  parameter 1  |
  
- It is also worth noting that arays are stored quite differently. This is because
- When an arrays is declared or an array is passed as a parameter, the resulting stack for storing the array is as follows:
+ It is also worth noting that arays are stored quite differently. This is because arrays are not passed by reference, only by value. When an arrays is declared or an array is passed as a parameter, the resulting stack for storing the array is as follows:
  
 
  | Array Stack |
@@ -142,3 +141,34 @@ The following table shows the stack arrangement used for a procedure/function ca
  |  array value 1  |
  | upper bound value |
  | lower bound value |
+
+
+## User Manual
+
+To compile the user source code for pascal, one should first compile the source code for the compiler using the make file within the project directory. This is done by executing the following command:
+> make all
+Alternatively, one could use the following command:
+> make pcc
+After this is executed, the pascal compiler is ready to compile the source code for pascal program. There are a few options for compiling the source code. One is directly passing the input though piping or redirecting input:
+	> cat \[pascal_source_code\] \| ./pcc
+This will however print the source code to the standard output. To redirect the output to the a filename, one should use the ‘-o’ option with a output file name like below:
+	> cat \[pascal_source_code\] \| ./pcc -o \[outputfileName\]
+Furthermore, one could just specify the input file without redirection/piping like below:
+	> ./pcc \[pascal_source_code\] -o \[outputfileName\] 
+Any of these ways should generate the assembly code code in one way or another. It is worth noting that piping the output of the compiler is not a sufficient way to generating source code, as the compiler will attempt to print the lexical tokens, parse tree (both semantically unchecked and clean/checked trees) alongside the output assembly code. Therefore, one should not do the following:
+ > ./pcc \[pascal_source_code\] \> \[outputfileName\]
+or 
+	 > ./pcc \[pascal_source_code\] \| \[other commands...\]
+To execute the assembly code, one should first install “nasm” to create a object file for the program. To do this on a ubuntu, one should first do the following:
+	> sudo apt-get install nasm
+After this is done, the assembly code can be executed by using the bash script “runAssembly” in the project directory. More specifically, one should do the following:
+	> ./runAssembly \[outputAssemblyFile\]
+This should run the assembly program that the pascal source code represents.
+
+## Status Report
+
+The pascal compiler presented in this report is not complete; there are a few limitations and caveats as well as unique features. Firstly, the parameters specified in the program definition has no functionality yet. Therefore using “input” or “output” within the program parameters effectively does not add input or output features to the pascal source code. However, it is worth noting that is still possible to use the “write” function (with one or more arguments) to print a result to standard out. Furthermore, it is not possible to read from standard in due to segmented fault errors when executing the assembly source code. The semantic analyzer will not throw any errors when the user proceeds to use the read from standard in, but the assembly code will skip over this action when executed to prevent the segmented fault. The compiler also does not handle floating point numbers, (so there is no difference between real types and integer types). However, a unique feature to this compiler is that the user is able to enter a number in scientific notation to declare a number wherever is appropriate.
+  
+## Testing Report
+
+The compiler was tested against its specifications to determine if there are any overall problems to be fixed. Each section below shows a pascal source file with its output result. If a error is expected, the description will rightful mention this.
