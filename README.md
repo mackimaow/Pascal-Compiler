@@ -190,9 +190,8 @@ The compiler was tested against its specifications to determine if there are any
 
 ### Program 1 
 \[Testing greatest common denominator function with 345 and 678 (should compile and run normally as expected)\]
-
+#### Source
 ```pascal
-
 program example(input, output);
 	var x:  integer;
 	function gcd(a, b: integer): integer;
@@ -204,6 +203,34 @@ begin
 	x := gcd(345, 678);
 	write(x)
 end.
-
 ```
+#### Output
+> 3
+
+### Program 2
+\[Storing the function range of x^2 in a array from 3 to 10 then printing the result (should compile and run normally as expected)\]
+
+#### Source
+```pascal
+program example(input, output);
+	var x:  integer;
+	var someArray : array [ 3 .. 10 ] of integer ; 
+begin
+	for x:= 3 to 10 do
+		someArray[x] := x*x;
+
+	for x:= 3 to 10 do
+		write(someArray[x])
+end.
+```
+#### Output
+> 9  
+16  
+25  
+36  
+49  
+64
+81
+100
+
 
