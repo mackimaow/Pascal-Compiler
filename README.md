@@ -249,3 +249,100 @@ end.
 #### Output
 > \[ERROR\] ARRAY "someArray" is indexed at 2 which is less than the lower bound of 3 at (6,2) \[TRACE: example\]
 
+### Program 4
+Attempting to get a variable out of scope of a function (should semantically fail)
+
+#### Source
+```pascal
+program example(input, output);
+	var y:  integer;
+	function bad (x : integer) : integer;
+	begin
+		bad := x mod y
+	end;
+begin
+	y:=10;
+	write(bad(100))
+end.
+```
+#### Output
+> \[ERROR\] VARIABLE "y" was referenced at (6,16), but was never declared. \[TRACE: example.bad\]
+
+### Program 5
+Attempting to get a variable out of scope of a procedure (should compile and run normally as expected)
+
+#### Source
+```pascal
+program example(input, output);
+	var y:  integer;
+	var result : integer;
+	procedure okay (x : integer);
+	begin
+		result := x mod y
+	end;
+begin
+	y:=10;
+	okay(123);
+	write(result)
+end.
+```
+#### Output
+> 3
+
+### Program 6
+Attempting to get a assign a variable to a different type (should fail at semantic stage)
+
+#### Source
+```pascal
+program example(input, output);
+	var x:  integer;
+	var y:  real;
+begin
+	y:=3; 
+	x:=2*y;
+	write(x)
+end.
+```
+#### Output
+> \[ERROR\] ASSIGNMENT of variable "x" of type "INTEGER" does not match left hand side type of "REAL" at (7,2). \[TRACE: example\]
+
+### Program 7
+Testing greatest common denominator function with 345 and 678, but the return type of the function does not match the assigning variable (should fail at semantic stage)
+
+#### Source
+```pascal
+program example(input, output);
+	var x:  real;
+	function gcd(a, b: integer): integer;
+	begin
+	   if b = 0 then gcd := a;
+	   gcd := gcd(b, a mod b)
+	end;
+begin
+	x:= gcd(345, 678);
+	write(x)
+end.
+```
+#### Output
+> \[ERROR\] ASSIGNMENT of variable "x" of type "REAL" does not match left hand side type of "INTEGER" at (9,2). \[TRACE: example\]
+
+### Program 8
+Finding the first fibonacci number before 50 (should compile and run normally as expected)
+
+#### Source
+```pascal
+program example(input, output);
+	var x, y:  real;
+begin
+	y := 0;
+	x := 1;
+	while x < 50 do
+	begin
+		x := x + y;
+		y := x - y
+	end;
+	write(y)
+end.
+```
+#### Output
+> 34
