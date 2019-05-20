@@ -327,16 +327,18 @@ end.
 > \[ERROR\] ASSIGNMENT of variable "x" of type "REAL" does not match left hand side type of "INTEGER" at (9,2). \[TRACE: example\]
 
 ### Program 8
-Finding the first fibonacci number before 50 (should compile and run normally as expected)
+Finding the first fibonacci number before a number (read from standard in) (should compile and run normally as expected)
 
 #### Source
 ```pascal
 program example(input, output);
 	var x, y:  real;
+	var maxValue : real;
 begin
+	read(maxValue);	
 	y := 0;
 	x := 1;
-	while x < 50 do
+	while x < maxValue do
 	begin
 		x := x + y;
 		y := x - y
@@ -344,5 +346,8 @@ begin
 	write(y)
 end.
 ```
+#### Input
+> 50
+
 #### Output
 > 34
