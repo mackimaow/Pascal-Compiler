@@ -1,4 +1,6 @@
-# Pascal-Compiler
+# Pascal-Compiler (CS Compilers Course Final Project)
+
+**Note: Please don't use this complier for production as it is just a project submission for my CS class!**
 
 Compiler Haiku:
 
@@ -10,7 +12,9 @@ by <br>
 Massimiliano Cutugno
 <br><br>
 This pascal compiler (written in C with Lex and Yacc Tools) generates source code into x86 assembly code (intel syntax). <br><br>
-Please go to the user manual section to see how to use the compiler
+Please go to the user manual section to see how to use the compiler. 
+
+
 
 
 ## Design Document
