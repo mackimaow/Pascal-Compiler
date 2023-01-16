@@ -4,9 +4,9 @@
 
 Compiler Haiku:
 
-> Compile Pascal  
-Segmented fault occurred  
-Compile Pascal
+> Compile the Pascal 
+Segmented fault had occurred
+Question life choices
 
 by <br>
 Massimiliano Cutugno
